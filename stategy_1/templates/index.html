@@ -86,14 +86,14 @@
         </header>
 
         <!-- KPI SUMMARY CARDS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             
-            <!-- CARD 1: CHALLENGE TARGET PROGRESS -->
+            <!-- CARD 1: CHALLENGE TARGET PROGRESS (+8% / +$160) -->
             <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
                 <div class="flex justify-between items-start">
                     <div>
-                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Target Goal (+8%)</span>
-                        <div class="text-2xl font-bold mt-1 text-white mono" id="total-profit-usd">+$0.00</div>
+                        <span class="text-xs font-medium text-emerald-400 uppercase tracking-wider">Target Goal (+8%)</span>
+                        <div class="text-2xl font-bold mt-1 text-emerald-400 mono" id="target-profit-val">+$0.00 (+0.0%)</div>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
                         <i class="fa-solid fa-trophy"></i>
@@ -101,16 +101,46 @@
                 </div>
                 <div class="mt-4">
                     <div class="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>Progress: <span id="target-progress-pct" class="text-emerald-400 font-semibold">0%</span></span>
-                        <span>Target: +$160.00</span>
+                        <span>Progress: <span id="target-progress-pct" class="text-emerald-400 font-semibold">0.0%</span></span>
+                        <span>Goal: +$160.00</span>
                     </div>
                     <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
                         <div id="target-progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
+                    <div class="text-[10px] text-gray-400 mt-1.5 flex justify-between">
+                        <span>Remaining to goal:</span>
+                        <span id="target-remaining-text" class="text-emerald-400 font-mono font-semibold">+$160.00 to pass</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- CARD 2: DAILY LOSS GUARD (5% CEILING / 2 LOSS STOP) -->
+            <!-- CARD 2: OVERALL MAX DRAWDOWN GUARD (-8% / -$160) -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-medium text-rose-400 uppercase tracking-wider">Overall Max Loss (-8%)</span>
+                        <div class="text-2xl font-bold mt-1 text-white mono" id="total-loss-val">-$0.00 (-0.0%)</div>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Loss Taken: <span id="total-loss-pct" class="text-rose-400 font-semibold">0.0% / 8.0%</span></span>
+                        <span id="total-loss-buffer" class="text-emerald-400 font-semibold">$160.00 buffer</span>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                        <div id="total-loss-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="text-[10px] text-gray-400 mt-1.5 flex justify-between">
+                        <span>Hard Floor:</span>
+                        <span class="text-rose-400 font-mono font-medium">$1,840.00 (-$160.00 max)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 3: DAILY LOSS GUARD (5% CEILING / 2 LOSS STOP) -->
             <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
                 <div class="flex justify-between items-start">
                     <div>
@@ -129,10 +159,14 @@
                     <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
                         <div id="daily-loss-bar" class="bg-rose-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
+                    <div class="text-[10px] text-gray-400 mt-1.5 flex justify-between">
+                        <span>Daily Circuit Stop:</span>
+                        <span class="text-amber-400 font-mono font-medium">-$50.00 (2 trades)</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- CARD 3: CHALLENGE STATS & WIN RATE -->
+            <!-- CARD 4: CHALLENGE STATS & WIN RATE -->
             <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
                 <div class="flex justify-between items-start">
                     <div>
@@ -149,13 +183,13 @@
                         <span class="mono text-emerald-400 font-semibold" id="win-rate-text">0.0% (0W / 0L)</span>
                     </div>
                     <div class="flex justify-between">
-                        <span>Max Drawdown Floor:</span>
-                        <span class="mono text-rose-400 font-medium">$1,840.00</span>
+                        <span>Net Challenge PnL:</span>
+                        <span class="mono font-semibold" id="total-net-pl">+$0.00</span>
                     </div>
                 </div>
             </div>
 
-            <!-- CARD 4: REAL OANDA BROKER ACCOUNT -->
+            <!-- CARD 5: REAL OANDA BROKER ACCOUNT -->
             <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
                 <div class="flex justify-between items-start">
                     <div>
@@ -445,35 +479,67 @@
             }
 
             // 2. Metrics & Cards
+            // A. Target Profit (+8% / +$160.00)
             const totalPl = risk.total_pl || 0.0;
-            const totalGainPct = risk.total_gain_pct || 0.0;
-            const totalProfitEl = document.getElementById('total-profit-usd');
-            totalProfitEl.innerText = `${totalPl >= 0 ? '+' : ''}$${totalPl.toFixed(2)} (${totalGainPct >= 0 ? '+' : ''}${totalGainPct.toFixed(1)}%)`;
-            totalProfitEl.className = `text-2xl font-bold mt-1 mono ${totalPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
+            const overallProfitUsd = risk.overall_profit_usd !== undefined ? risk.overall_profit_usd : Math.max(0, totalPl);
+            const overallProfitPct = risk.overall_profit_pct !== undefined ? risk.overall_profit_pct : Math.max(0, (totalPl / 2000.0) * 100.0);
+            const profitRemainingUsd = risk.profit_remaining_usd !== undefined ? risk.profit_remaining_usd : Math.max(0, 160.0 - overallProfitUsd);
             const targetProgress = Math.max(0, Math.min(100, risk.target_progress_pct || 0));
-            document.getElementById('target-progress-pct').innerText = `${targetProgress}%`;
-            document.getElementById('target-progress-bar').style.width = `${targetProgress}%`;
 
+            const profitValEl = document.getElementById('target-profit-val');
+            profitValEl.innerText = `+$${overallProfitUsd.toFixed(2)} (+${overallProfitPct.toFixed(1)}%)`;
+            document.getElementById('target-progress-pct').innerText = `${targetProgress.toFixed(1)}%`;
+            document.getElementById('target-progress-bar').style.width = `${targetProgress}%`;
+            document.getElementById('target-remaining-text').innerText = `$${profitRemainingUsd.toFixed(2)} to pass`;
+
+            // B. Total Loss / Max Drawdown (-8% / -$160.00)
+            const overallLossUsd = risk.overall_loss_usd !== undefined ? risk.overall_loss_usd : Math.abs(Math.min(0, totalPl));
+            const overallLossPct = risk.overall_loss_pct !== undefined ? risk.overall_loss_pct : (overallLossUsd / 2000.0) * 100.0;
+            const drawdownBufferUsd = risk.drawdown_buffer_usd !== undefined ? risk.drawdown_buffer_usd : Math.max(0, 160.0 - overallLossUsd);
+            const drawdownUsedPct = Math.max(0, Math.min(100, risk.drawdown_used_pct !== undefined ? risk.drawdown_used_pct : (overallLossUsd / 160.0) * 100.0));
+
+            const totalLossValEl = document.getElementById('total-loss-val');
+            totalLossValEl.innerText = `-$${overallLossUsd.toFixed(2)} (-${overallLossPct.toFixed(1)}%)`;
+            totalLossValEl.className = `text-2xl font-bold mt-1 mono ${overallLossUsd > 0 ? 'text-rose-400' : 'text-gray-100'}`;
+            
+            document.getElementById('total-loss-pct').innerText = `${overallLossPct.toFixed(1)}% / 8.0%`;
+            document.getElementById('total-loss-buffer').innerText = `$${drawdownBufferUsd.toFixed(2)} buffer`;
+            
+            const totalLossBar = document.getElementById('total-loss-bar');
+            totalLossBar.style.width = `${drawdownUsedPct}%`;
+            if (drawdownUsedPct > 50) {
+                totalLossBar.className = "bg-rose-500 h-2 rounded-full transition-all duration-500";
+            } else if (drawdownUsedPct > 20) {
+                totalLossBar.className = "bg-amber-500 h-2 rounded-full transition-all duration-500";
+            } else {
+                totalLossBar.className = "bg-emerald-500 h-2 rounded-full transition-all duration-500";
+            }
+
+            // C. Today's Daily Loss (-5% / -$100 / 2 losses)
             const dailyPl = risk.daily_pl || 0.0;
+            const dailyLossPct = risk.daily_loss_pct || 0.0;
             const dailyPlEl = document.getElementById('daily-pl-usd');
             dailyPlEl.innerText = `${dailyPl >= 0 ? '+' : ''}$${dailyPl.toFixed(2)}`;
-            dailyPlEl.className = `text-2xl font-bold mt-1 mono ${dailyPl >= 0 ? 'text-gray-100' : 'text-rose-400'}`;
+            dailyPlEl.className = `text-2xl font-bold mt-1 mono ${dailyPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
             
-            // Daily Loss Bar & Text
             const dailyLosses = risk.daily_losses_count || 0;
             const maxDailyLosses = risk.max_daily_losses || 2;
             document.getElementById('daily-losses-text').innerText = `${dailyLosses} / ${maxDailyLosses} max`;
             const dailyLossBarPct = Math.min(100, (dailyLosses / maxDailyLosses) * 100);
             document.getElementById('daily-loss-bar').style.width = `${dailyLossBarPct}%`;
 
-            // Equity, Win Rate & OANDA
+            // D. Challenge Equity & Win Rate
             document.getElementById('challenge-equity').innerText = `$${(risk.current_equity || 2000).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             const totalWins = risk.total_wins || 0;
             const totalLosses = risk.total_losses || 0;
             const winRate = risk.win_rate_pct || 0.0;
             document.getElementById('win-rate-text').innerText = `${winRate}% (${totalWins}W / ${totalLosses}L)`;
 
+            const totalNetPlEl = document.getElementById('total-net-pl');
+            totalNetPlEl.innerText = `${totalPl >= 0 ? '+' : ''}$${totalPl.toFixed(2)}`;
+            totalNetPlEl.className = `mono font-semibold ${totalPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            // E. Real OANDA Broker Account
             document.getElementById('oanda-nav').innerText = `$${(acct.nav || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             document.getElementById('margin-avail').innerText = `$${(acct.margin_available || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
 

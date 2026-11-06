@@ -234,8 +234,24 @@ class RiskManager:
         daily_pl = self.state["daily_realized_pl"] + open_unrealized_pl
         current_equity = self.virtual_capital + total_pl
         total_gain_pct = (total_pl / self.virtual_capital) * 100.0
-        daily_loss_pct = (abs(daily_pl) / self.virtual_capital) * 100.0 if daily_pl < 0 else 0.0
-        target_progress_pct = min(100.0, max(0.0, (total_pl / self.target_profit_usd) * 100.0))
+        
+        # Overall Profit Target Metrics (+8% / +$160)
+        overall_profit_usd = max(0.0, total_pl)
+        overall_profit_pct = (overall_profit_usd / self.virtual_capital) * 100.0
+        profit_remaining_usd = max(0.0, self.target_profit_usd - overall_profit_usd)
+        target_progress_pct = min(100.0, max(0.0, (overall_profit_usd / self.target_profit_usd) * 100.0))
+
+        # Overall Max Drawdown / Total Loss Metrics (-8% / -$160)
+        overall_loss_usd = abs(min(0.0, total_pl))
+        overall_loss_pct = (overall_loss_usd / self.virtual_capital) * 100.0
+        drawdown_buffer_usd = max(0.0, self.max_drawdown_usd - overall_loss_usd)
+        drawdown_used_pct = min(100.0, (overall_loss_usd / self.max_drawdown_usd) * 100.0)
+        max_drawdown_floor = self.virtual_capital - self.max_drawdown_usd # $1,840.00
+
+        # Daily Loss Metrics (-5% / -$100 / 2 losses max)
+        daily_loss_usd = abs(min(0.0, daily_pl))
+        daily_loss_pct = (daily_loss_usd / self.virtual_capital) * 100.0
+        daily_buffer_usd = max(0.0, self.daily_loss_limit_usd - daily_loss_usd)
 
         tot_trades = self.state.get("total_trades_count", 0)
         tot_wins = self.state.get("total_wins", 0)
@@ -247,19 +263,34 @@ class RiskManager:
             "current_equity": round(current_equity, 2),
             "total_pl": round(total_pl, 2),
             "total_gain_pct": round(total_gain_pct, 2),
+            # Profit Target (+8%)
             "target_profit_usd": self.target_profit_usd,
             "target_profit_pct": Config.TARGET_PROFIT_PCT,
+            "overall_profit_usd": round(overall_profit_usd, 2),
+            "overall_profit_pct": round(overall_profit_pct, 2),
+            "profit_remaining_usd": round(profit_remaining_usd, 2),
             "target_progress_pct": round(target_progress_pct, 1),
-            "daily_pl": round(daily_pl, 2),
-            "daily_loss_pct": round(daily_loss_pct, 2),
-            "max_daily_loss_usd": self.daily_loss_limit_usd,
-            "circuit_breaker_usd": self.circuit_breaker_usd,
+            # Total Drawdown (-8%)
             "max_drawdown_usd": self.max_drawdown_usd,
             "max_drawdown_pct": Config.MAX_DRAWDOWN_PCT,
+            "overall_loss_usd": round(overall_loss_usd, 2),
+            "overall_loss_pct": round(overall_loss_pct, 2),
+            "drawdown_buffer_usd": round(drawdown_buffer_usd, 2),
+            "drawdown_used_pct": round(drawdown_used_pct, 1),
+            "max_drawdown_floor": round(max_drawdown_floor, 2),
+            # Daily Loss (-5% / 2 losses)
+            "daily_pl": round(daily_pl, 2),
+            "daily_loss_usd": round(daily_loss_usd, 2),
+            "daily_loss_pct": round(daily_loss_pct, 2),
+            "daily_buffer_usd": round(daily_buffer_usd, 2),
+            "max_daily_loss_usd": self.daily_loss_limit_usd,
+            "max_daily_loss_pct": Config.MAX_DAILY_LOSS_PCT,
+            "circuit_breaker_usd": self.circuit_breaker_usd,
             "risk_per_trade_usd": self.risk_per_trade_usd,
             "daily_trades_count": self.state.get("daily_trades_count", 0),
             "daily_losses_count": self.state.get("daily_losses_count", 0),
             "max_daily_losses": Config.MAX_DAILY_LOSSES,
+            # Challenge Stats
             "total_trades_count": tot_trades,
             "total_wins": tot_wins,
             "total_losses": tot_losses,
