@@ -46,14 +46,75 @@ class TradingBot:
             logger.error(message)
 
     def _seed_closed_trades(self):
-        """Record existing closed trades on startup so we only track newly closed trades."""
+        """
+        Record existing closed trades on startup and synchronize challenge performance directly
+        from OANDA broker history so that Render restarts never lose past challenge trades.
+        """
         try:
-            closed = self.client.get_closed_trades(count=30)
+            closed = self.client.get_closed_trades(count=50)
+            challenge_start = getattr(Config, "CHALLENGE_START_DATE", "2026-11-05")
+            today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+            # Check if RiskManager needs historical synchronization (e.g. fresh Render container)
+            needs_sync = (self.risk_manager.state.get("total_trades_count", 0) == 0)
+
+            if needs_sync and closed:
+                self.log("INFO", f"Synchronizing challenge trades from OANDA broker history (since {challenge_start})...")
+                total_pl = 0.0
+                total_trades = 0
+                total_wins = 0
+                total_losses = 0
+                daily_pl = 0.0
+                daily_trades = 0
+                daily_losses = 0
+                running_equity = self.risk_manager.virtual_capital
+                equity_history = [
+                    {"time": f"{challenge_start}T00:00:00+00:00", "equity": running_equity}
+                ]
+
+                # Process trades in chronological order (oldest to newest)
+                sorted_closed = sorted(closed, key=lambda x: x.get("closeTime", ""))
+
+                for trade in sorted_closed:
+                    close_time = trade.get("closeTime", "")
+                    if close_time >= challenge_start:
+                        pl = float(trade.get("realizedPL", 0.0))
+                        trade_date = close_time[:10]
+                        total_pl += pl
+                        total_trades += 1
+                        if pl > 0:
+                            total_wins += 1
+                        elif pl < 0:
+                            total_losses += 1
+
+                        running_equity += pl
+                        equity_history.append({"time": close_time, "equity": round(running_equity, 2)})
+
+                        # Only attribute to daily PnL if closed today
+                        if trade_date == today_utc:
+                            daily_pl += pl
+                            daily_trades += 1
+                            if pl < 0:
+                                daily_losses += 1
+
+                self.risk_manager.state["challenge_start_date"] = challenge_start
+                self.risk_manager.state["total_realized_pl"] = round(total_pl, 4)
+                self.risk_manager.state["total_trades_count"] = total_trades
+                self.risk_manager.state["total_wins"] = total_wins
+                self.risk_manager.state["total_losses"] = total_losses
+                self.risk_manager.state["daily_realized_pl"] = round(daily_pl, 4)
+                self.risk_manager.state["daily_trades_count"] = daily_trades
+                self.risk_manager.state["daily_losses_count"] = daily_losses
+                self.risk_manager.state["equity_history"] = equity_history
+                self.risk_manager._save_state()
+                self.log("INFO", f"Broker Sync Complete: {total_trades} challenge trades loaded. Total Realized PnL: ${total_pl:+.2f}")
+
+            # Register all closed trade IDs so we don't double count
             for t in closed:
                 self.known_closed_trade_ids.add(t["id"])
-            self.log("INFO", f"Seeded {len(self.known_closed_trade_ids)} past closed trades.")
+            self.log("INFO", f"Seeded {len(self.known_closed_trade_ids)} past closed trades from OANDA.")
         except Exception as e:
-            self.log("WARNING", f"Could not seed closed trades: {e}")
+            self.log("WARNING", f"Could not sync closed trades: {e}")
 
     def sync_closed_trades(self):
         """Detect newly closed trades and update RiskManager PnL."""

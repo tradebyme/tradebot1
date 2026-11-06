@@ -1,262 +1,305 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OANDA Forex Bot | $2k Prop Challenge Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OANDA Forex Engine | $2k Prop Challenge Terminal</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#0f172a',
+                            900: '#0b1120',
+                            950: '#070a12',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #080c14;
-            color: #e2e8f0;
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            box-sizing: border-box;
         }
+
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
+            background-color: #070a12;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
         .mono {
             font-family: 'JetBrains Mono', monospace;
         }
+
+        /* Glassmorphism card styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .glass-panel-elevated {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 65, 85, 0.7);
+        }
+
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
         }
         ::-webkit-scrollbar-track {
-            background: #0f172a;
+            background: #070a12;
         }
         ::-webkit-scrollbar-thumb {
             background: #334155;
-            border-radius: 3px;
+            border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #475569;
         }
     </style>
 </head>
-<body class="min-h-screen p-3 md:p-6 lg:p-8 flex flex-col justify-between">
+<body class="min-h-screen p-2.5 sm:p-4 md:p-6 lg:p-8 flex flex-col justify-between">
 
-    <div class="max-w-7xl mx-auto w-full space-y-6">
+    <div class="max-w-7xl mx-auto w-full space-y-4 sm:space-y-6">
 
-        <!-- HEADER SECTION -->
-        <header class="bg-gray-900/90 backdrop-blur border border-gray-800 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fa-solid fa-robot text-white text-xl"></i>
+        <!-- HEADER SECTION (FULLY RESPONSIVE) -->
+        <header class="glass-panel-elevated rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-2xl">
+            <!-- Brand & Identity -->
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 flex-shrink-0">
+                    <i class="fa-solid fa-robot text-white text-lg sm:text-xl"></i>
                 </div>
-                <div>
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white">OANDA v20 Forex Trader</h1>
-                        <span id="bot-status-badge" class="px-3 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <h1 class="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white truncate">OANDA Prop Trader</h1>
+                        <span id="bot-status-badge" class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 whitespace-nowrap">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                             ACTIVE & MONITORING
                         </span>
                     </div>
-                    <p class="text-xs md:text-sm text-gray-400 mt-0.5">
-                        Target: <span class="text-emerald-400 font-semibold">+8% ($160)</span> | Daily Stop: <span class="text-rose-400 font-semibold">Max 2 Losses (-$50)</span> | Max Loss: <span class="text-rose-400 font-semibold">-8% ($160)</span>
+                    <p class="text-xs text-gray-400 mt-0.5 truncate">
+                        $2,000 Challenge &bull; London/NY M15 Momentum Pullback &bull; 1:2 R:R
                     </p>
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3">
-                <div class="text-right hidden sm:block pr-3 border-r border-gray-800">
-                    <div class="text-[10px] text-gray-500 uppercase tracking-widest">UTC Time</div>
-                    <div id="utc-clock" class="text-sm font-semibold mono text-gray-200">--:--:-- UTC</div>
+            <!-- Controls & Clock -->
+            <div class="flex flex-wrap items-center justify-between lg:justify-end gap-2.5 sm:gap-3 border-t lg:border-t-0 border-gray-800/80 pt-3 lg:pt-0">
+                <!-- Clock -->
+                <div class="hidden sm:block text-right pr-3 border-r border-gray-800">
+                    <div class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">UTC Server</div>
+                    <div id="utc-clock" class="text-xs sm:text-sm font-semibold mono text-gray-200">--:--:-- UTC</div>
                 </div>
 
-                <!-- CONTROLS -->
-                <button id="btn-pause" onclick="togglePause()" class="px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition flex items-center gap-2">
-                    <i class="fa-solid fa-pause"></i>
-                    <span id="pause-btn-text">Pause Bot</span>
-                </button>
-                <button onclick="forceScan()" class="px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 transition flex items-center gap-2">
-                    <i id="scan-icon" class="fa-solid fa-bolt"></i>
-                    <span>Scan Now</span>
-                </button>
-                <button onclick="confirmCloseAll()" class="px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 transition flex items-center gap-2">
-                    <i class="fa-solid fa-power-off"></i>
-                    <span>Close All</span>
-                </button>
-                <a href="/logout" title="Log Out" class="px-3 py-2 text-xs md:text-sm font-medium rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 transition flex items-center">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </a>
+                <!-- Action Buttons (Responsive flex grid) -->
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button id="btn-pause" onclick="togglePause()" class="flex-1 sm:flex-initial px-3 py-2 text-xs font-semibold rounded-xl bg-gray-800/90 hover:bg-gray-700 text-gray-200 border border-gray-700 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-pause text-amber-400"></i>
+                        <span id="pause-btn-text">Pause</span>
+                    </button>
+                    <button onclick="forceScan()" class="flex-1 sm:flex-initial px-3.5 py-2 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 transition flex items-center justify-center gap-1.5">
+                        <i id="scan-icon" class="fa-solid fa-bolt"></i>
+                        <span>Scan</span>
+                    </button>
+                    <button onclick="confirmCloseAll()" class="flex-1 sm:flex-initial px-3 py-2 text-xs font-semibold rounded-xl bg-rose-950/70 hover:bg-rose-900 text-rose-300 border border-rose-800/70 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-power-off text-rose-400"></i>
+                        <span>Close All</span>
+                    </button>
+                    <a href="/logout" title="Log Out" class="px-2.5 py-2 text-xs rounded-xl bg-gray-800/90 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 transition flex items-center justify-center">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </a>
+                </div>
             </div>
         </header>
 
-        <!-- KPI SUMMARY CARDS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            
-            <!-- CARD 1: CHALLENGE TARGET PROGRESS (+8% / +$160) -->
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs font-medium text-emerald-400 uppercase tracking-wider">Target Goal (+8%)</span>
-                        <div class="text-2xl font-bold mt-1 text-emerald-400 mono" id="target-profit-val">+$0.00 (+0.0%)</div>
-                    </div>
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                        <i class="fa-solid fa-trophy"></i>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <div class="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>Progress: <span id="target-progress-pct" class="text-emerald-400 font-semibold">0.0%</span></span>
-                        <span>Goal: +$160.00</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                        <div id="target-progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <div class="text-[10px] text-gray-400 mt-1.5 flex justify-between">
-                        <span>Remaining to goal:</span>
-                        <span id="target-remaining-text" class="text-emerald-400 font-mono font-semibold">+$160.00 to pass</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CARD 2: OVERALL MAX DRAWDOWN GUARD (-8% / -$160) -->
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs font-medium text-rose-400 uppercase tracking-wider">Overall Max Loss (-8%)</span>
-                        <div class="text-2xl font-bold mt-1 text-white mono" id="total-loss-val">-$0.00 (-0.0%)</div>
-                    </div>
-                    <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <div class="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>Loss Taken: <span id="total-loss-pct" class="text-rose-400 font-semibold">0.0% / 8.0%</span></span>
-                        <span id="total-loss-buffer" class="text-emerald-400 font-semibold">$160.00 buffer</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                        <div id="total-loss-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <div class="text-[10px] text-gray-400 mt-1.5 flex justify-between">
-                        <span>Hard Floor:</span>
-                        <span class="text-rose-400 font-mono font-medium">$1,840.00 (-$160.00 max)</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CARD 3: DAILY LOSS GUARD (5% CEILING / 2 LOSS STOP) -->
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Today's PnL & Safety</span>
-                        <div class="text-2xl font-bold mt-1 text-white mono" id="daily-pl-usd">$0.00</div>
-                    </div>
-                    <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <div class="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>Daily Losses: <span id="daily-losses-text" class="text-amber-400 font-semibold">0 / 2 max</span></span>
-                        <span>Limit: -$100.00</span>
-                    </div>
-                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                        <div id="daily-loss-bar" class="bg-rose-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                    <div class="text-[10px] text-gray-400 mt-1.5 flex justify-between">
-                        <span>Daily Circuit Stop:</span>
-                        <span class="text-amber-400 font-mono font-medium">-$50.00 (2 trades)</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CARD 4: CHALLENGE STATS & WIN RATE -->
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Challenge Equity ($2k Base)</span>
-                        <div class="text-2xl font-bold mt-1 text-white mono" id="challenge-equity">$2,000.00</div>
-                    </div>
-                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                        <i class="fa-solid fa-wallet"></i>
-                    </div>
-                </div>
-                <div class="mt-3 text-xs text-gray-400 space-y-1">
-                    <div class="flex justify-between">
-                        <span>Win Rate:</span>
-                        <span class="mono text-emerald-400 font-semibold" id="win-rate-text">0.0% (0W / 0L)</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Net Challenge PnL:</span>
-                        <span class="mono font-semibold" id="total-net-pl">+$0.00</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CARD 5: REAL OANDA BROKER ACCOUNT -->
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">OANDA Account NAV</span>
-                        <div class="text-2xl font-bold mt-1 text-white mono" id="oanda-nav">$0.00</div>
-                    </div>
-                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-                        <i class="fa-solid fa-server"></i>
-                    </div>
-                </div>
-                <div class="mt-3 text-xs text-gray-400 space-y-1">
-                    <div class="flex justify-between">
-                        <span>Margin Available:</span>
-                        <span class="mono text-gray-200" id="margin-avail">$0.00</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Floating PnL:</span>
-                        <span class="mono font-semibold" id="floating-pl">$0.00</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
         <!-- STATUS MESSAGE BANNER -->
-        <div id="status-banner" class="bg-blue-950/40 border border-blue-800/40 rounded-xl p-3 px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs md:text-sm text-blue-300">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-info text-blue-400"></i>
-                <span id="status-message-text">Monitoring London/New York session market conditions.</span>
+        <div id="status-banner" class="glass-panel rounded-xl p-3 px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-blue-300">
+            <div class="flex items-center gap-2 min-w-0">
+                <i class="fa-solid fa-circle-info text-blue-400 flex-shrink-0"></i>
+                <span id="status-message-text" class="truncate font-medium">Monitoring London/New York session market conditions.</span>
             </div>
-            <div class="flex items-center gap-4 text-xs text-gray-400">
+            <div class="flex items-center gap-3 text-xs text-gray-400 flex-shrink-0">
                 <span id="market-session-indicator"><i class="fa-regular fa-clock mr-1"></i> Checking session...</span>
             </div>
         </div>
 
+        <!-- TIER 1: PRIMARY EXECUTIVE KPI CARDS (PROFIT TARGET vs DRAWDOWN CUSHION) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+            
+            <!-- HERO CARD 1: CHALLENGE PROFIT TARGET (+8% / +$160.00) -->
+            <div class="glass-panel-elevated rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg border-emerald-500/20">
+                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Target Goal (+8.0%)</span>
+                            <span class="px-2 py-0.2 text-[10px] rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Target: +$160.00</span>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="target-profit-val">+$0.00 (+0.0%)</div>
+                    </div>
+                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0 border border-emerald-500/20">
+                        <i class="fa-solid fa-trophy text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-gray-300 mb-1.5 font-medium">
+                        <span>Progress: <span id="target-progress-pct" class="text-emerald-400 font-bold mono">0.0%</span></span>
+                        <span id="target-remaining-text" class="text-gray-400 font-mono text-[11px]">+$160.00 to pass</span>
+                    </div>
+                    <div class="w-full bg-gray-800/80 rounded-full h-2.5 overflow-hidden p-0.5 border border-gray-700/50">
+                        <div id="target-progress-bar" class="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HERO CARD 2: CHALLENGE DRAWDOWN SHIELD (-8% / -$160.00) -->
+            <div class="glass-panel-elevated rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg border-rose-500/20">
+                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">Max Drawdown Shield (-8.0%)</span>
+                            <span class="px-2 py-0.2 text-[10px] rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">Limit: -$160.00</span>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="total-loss-val">-$0.00 (-0.0%)</div>
+                    </div>
+                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 flex-shrink-0 border border-rose-500/20">
+                        <i class="fa-solid fa-shield-halved text-lg"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-gray-300 mb-1.5 font-medium">
+                        <span>Loss Taken: <span id="total-loss-pct" class="text-rose-400 font-bold mono">0.0% / 8.0%</span></span>
+                        <span id="total-loss-buffer" class="text-emerald-400 font-bold mono text-[11px]">$160.00 cushion left</span>
+                    </div>
+                    <div class="w-full bg-gray-800/80 rounded-full h-2.5 overflow-hidden p-0.5 border border-gray-700/50">
+                        <div id="total-loss-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TIER 2: SECONDARY RISK & ACCOUNT TILES (4 EQUAL COLUMNS) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            
+            <!-- TILE 1: DAILY LOSS SAFETY -->
+            <div class="glass-panel rounded-2xl p-3.5 sm:p-4 shadow">
+                <div class="flex justify-between items-center text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                    <span>Today's PnL</span>
+                    <i class="fa-solid fa-calendar-day text-amber-400"></i>
+                </div>
+                <div class="text-lg sm:text-xl font-bold mt-1 text-white mono" id="daily-pl-usd">$0.00</div>
+                <div class="mt-2 text-[11px] text-gray-400 flex justify-between items-center">
+                    <span>Losses: <span id="daily-losses-text" class="text-amber-400 font-semibold font-mono">0 / 2 max</span></span>
+                    <span class="text-gray-500 font-mono">Stop: -$50</span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                    <div id="daily-loss-bar" class="bg-amber-400 h-full rounded-full transition-all" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- TILE 2: CHALLENGE EQUITY -->
+            <div class="glass-panel rounded-2xl p-3.5 sm:p-4 shadow">
+                <div class="flex justify-between items-center text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                    <span>Challenge Equity</span>
+                    <i class="fa-solid fa-wallet text-blue-400"></i>
+                </div>
+                <div class="text-lg sm:text-xl font-bold mt-1 text-white mono" id="challenge-equity">$2,000.00</div>
+                <div class="mt-2 text-[11px] text-gray-400 flex justify-between items-center">
+                    <span>Win Rate: <span id="win-rate-text" class="text-emerald-400 font-semibold font-mono">0.0%</span></span>
+                    <span id="total-net-pl" class="font-mono text-gray-300 font-semibold">$0.00 net</span>
+                </div>
+                <div class="text-[10px] text-gray-500 mt-1">Base: $2,000 &bull; Floor: $1,840</div>
+            </div>
+
+            <!-- TILE 3: OANDA BROKER NAV -->
+            <div class="glass-panel rounded-2xl p-3.5 sm:p-4 shadow">
+                <div class="flex justify-between items-center text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                    <span>OANDA Broker NAV</span>
+                    <i class="fa-solid fa-server text-purple-400"></i>
+                </div>
+                <div class="text-lg sm:text-xl font-bold mt-1 text-white mono" id="oanda-nav">$0.00</div>
+                <div class="mt-2 text-[11px] text-gray-400 flex justify-between items-center">
+                    <span>Free Margin:</span>
+                    <span id="margin-avail" class="font-mono text-gray-200 font-semibold">$0.00</span>
+                </div>
+                <div class="text-[10px] text-gray-500 mt-1 flex justify-between">
+                    <span>Floating PnL:</span>
+                    <span id="floating-pl" class="font-mono font-bold">$0.00</span>
+                </div>
+            </div>
+
+            <!-- TILE 4: ACTIVE EXPOSURE & SESSION -->
+            <div class="glass-panel rounded-2xl p-3.5 sm:p-4 shadow">
+                <div class="flex justify-between items-center text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                    <span>Market & Session</span>
+                    <i class="fa-solid fa-globe text-cyan-400"></i>
+                </div>
+                <div class="text-lg sm:text-xl font-bold mt-1 text-white mono" id="open-trades-badge-count-tile">0 Active Trades</div>
+                <div class="mt-2 text-[11px] text-gray-400 flex justify-between items-center">
+                    <span>London/NY:</span>
+                    <span class="text-emerald-400 font-semibold font-mono">07:00-17:00 UTC</span>
+                </div>
+                <div class="text-[10px] text-gray-500 mt-1">Max Concurrent: 1 position</div>
+            </div>
+
+        </div>
+
         <!-- LIVE MARKET WATCH TICKER -->
-        <div id="live-quotes-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div id="live-quotes-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <!-- Dynamically populated with real-time Bid/Ask/Spread from OANDA -->
         </div>
 
-        <!-- LIVE OPEN TRADES TABLE -->
-        <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
+        <!-- CURRENTLY RUNNING TRADES (RESPONSIVE CARDS ON MOBILE + TABLE ON DESKTOP) -->
+        <div class="glass-panel-elevated rounded-2xl p-4 sm:p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-3.5">
+                <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
                         <i class="fa-solid fa-bolt-lightning"></i>
                     </div>
                     <div>
-                        <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Currently Running Trades</h2>
-                        <p class="text-xs text-gray-400">Real-time open positions on OANDA with live PnL and pip metrics</p>
+                        <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Currently Running Trades</h2>
+                        <p class="text-[11px] text-gray-400">Broker-executed positions on OANDA with server-side SL and TP</p>
                     </div>
                 </div>
                 <span class="px-2.5 py-1 text-xs font-mono font-bold rounded-full bg-gray-800 text-gray-200 border border-gray-700">
-                    <span id="open-trades-badge-count">0</span> ACTIVE
+                    <span id="open-trades-badge-count">0</span> RUNNING
                 </span>
             </div>
 
-            <div class="overflow-x-auto">
+            <!-- Desktop Table (hidden on mobile, visible on md+) -->
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-left text-xs">
-                    <thead class="text-gray-400 uppercase bg-gray-950/60 border-b border-gray-800">
+                    <thead class="text-gray-400 uppercase bg-gray-950/70 border-b border-gray-800">
                         <tr>
                             <th class="py-3 px-3">Ticket</th>
                             <th class="py-3 px-3">Pair</th>
-                            <th class="py-3 px-3">Direction</th>
+                            <th class="py-3 px-3">Type</th>
                             <th class="py-3 px-3">Units</th>
-                            <th class="py-3 px-3">Entry Price</th>
-                            <th class="py-3 px-3">Live Price</th>
+                            <th class="py-3 px-3">Entry</th>
+                            <th class="py-3 px-3">Current</th>
                             <th class="py-3 px-3">Stop Loss</th>
                             <th class="py-3 px-3">Take Profit</th>
                             <th class="py-3 px-3">Floating PnL</th>
@@ -266,85 +309,102 @@
                     <tbody id="open-trades-tbody" class="divide-y divide-gray-800 font-mono">
                         <tr>
                             <td colspan="10" class="py-8 text-center text-gray-500 font-sans">
-                                <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
-                                No active trades running. Bot is scanning for confirmed pullbacks.
+                                <i class="fa-solid fa-inbox text-2xl mb-2 block text-gray-600"></i>
+                                No active positions open. Bot is continuously scanning for M15 pullbacks.
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Mobile Card View (visible on < md screens, ZERO horizontal scrolling) -->
+            <div id="open-trades-mobile-cards" class="md:hidden space-y-3">
+                <div class="py-6 text-center text-gray-500 text-xs">
+                    <i class="fa-solid fa-inbox text-xl mb-1.5 block text-gray-600"></i>
+                    No active positions open.
+                </div>
+            </div>
         </div>
 
         <!-- CHARTS & PERFORMANCE TRAJECTORY -->
-        <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
+        <div class="glass-panel-elevated rounded-2xl p-4 sm:p-5 shadow-xl">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
                 <div>
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                    <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                         <i class="fa-solid fa-chart-area text-blue-400"></i>
-                        Challenge Equity Trajectory ($2k Starting Base)
+                        Challenge Equity Trajectory ($2,000 Baseline)
                     </h2>
-                    <p class="text-xs text-gray-400">Target Ceiling: $2,160 (+8%) | Max Drawdown Floor: $1,840 (-8%)</p>
+                    <p class="text-[11px] text-gray-400">Target Line: $2,160 (+8%) &bull; Max Drawdown Floor: $1,840 (-8%)</p>
                 </div>
                 <button onclick="resetChallenge()" class="text-xs text-gray-500 hover:text-rose-400 transition underline">
                     Reset Baseline
                 </button>
             </div>
-            <div class="h-64 w-full">
+            <div class="h-60 sm:h-72 w-full">
                 <canvas id="equityChart"></canvas>
             </div>
         </div>
 
         <!-- TRADE HISTORY & TERMINAL LOGS GRID -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
             <!-- CLOSED TRADES HISTORY -->
-            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-xl">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
-                        <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Completed Trades History</h2>
+            <div class="glass-panel rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3.5">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+                            <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Closed Trades History</h2>
+                        </div>
+                        <span class="text-xs text-gray-400 font-mono" id="total-trades-summary">0 recorded</span>
                     </div>
-                    <span class="text-xs text-gray-400 font-mono" id="total-trades-summary">0 trades recorded</span>
-                </div>
-                <div class="overflow-x-auto max-h-72">
-                    <table class="w-full text-left text-xs text-gray-400">
-                        <thead class="text-gray-500 uppercase border-b border-gray-800 bg-gray-950/50">
-                            <tr>
-                                <th class="py-2.5 px-3">Ticket</th>
-                                <th class="py-2.5 px-3">Pair</th>
-                                <th class="py-2.5 px-3">Units</th>
-                                <th class="py-2.5 px-3">Entry / Exit</th>
-                                <th class="py-2.5 px-3">Realized PnL</th>
-                                <th class="py-2.5 px-3 text-right">Close Time</th>
-                            </tr>
-                        </thead>
-                        <tbody id="closed-trades-tbody" class="divide-y divide-gray-800/60 font-mono">
-                            <tr>
-                                <td colspan="6" class="py-8 text-center text-gray-500 font-sans">
-                                    No closed trades recorded yet.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                    <!-- Desktop Table -->
+                    <div class="hidden sm:block overflow-x-auto max-h-72">
+                        <table class="w-full text-left text-xs text-gray-400">
+                            <thead class="text-gray-500 uppercase border-b border-gray-800 bg-gray-950/60 sticky top-0">
+                                <tr>
+                                    <th class="py-2.5 px-3">Ticket</th>
+                                    <th class="py-2.5 px-3">Pair</th>
+                                    <th class="py-2.5 px-3">Units</th>
+                                    <th class="py-2.5 px-3">Entry &rarr; Exit</th>
+                                    <th class="py-2.5 px-3">Realized PnL</th>
+                                    <th class="py-2.5 px-3 text-right">Closed</th>
+                                </tr>
+                            </thead>
+                            <tbody id="closed-trades-tbody" class="divide-y divide-gray-800/60 font-mono">
+                                <tr>
+                                    <td colspan="6" class="py-8 text-center text-gray-500 font-sans">
+                                        No closed trades recorded yet.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Cards List -->
+                    <div id="closed-trades-mobile-cards" class="sm:hidden space-y-2.5 max-h-72 overflow-y-auto">
+                        <div class="py-6 text-center text-gray-500 text-xs">No closed trades recorded yet.</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- LIVE ACTIVITY FEED (TERMINAL STYLE) -->
+            <!-- LIVE ACTIVITY FEED (VS CODE / TERMINAL STYLE) -->
             <div class="bg-black/90 border border-gray-800 rounded-2xl p-4 shadow-xl flex flex-col">
                 <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-800">
                     <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
                         <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                        <span class="text-xs font-semibold text-gray-400 ml-2 font-mono">bot_stream.log</span>
+                        <span class="text-xs font-semibold text-gray-400 ml-2 font-mono">trading_engine.log</span>
                     </div>
                     <span class="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                        LIVE
+                        STREAMING
                     </span>
                 </div>
                 <div id="terminal-feed" class="flex-1 overflow-y-auto max-h-72 text-xs font-mono space-y-1.5 p-2 bg-black rounded-lg">
-                    <div class="text-gray-500">Connecting to trading engine stream...</div>
+                    <div class="text-gray-500">Connecting to trading engine log stream...</div>
                 </div>
             </div>
 
@@ -353,8 +413,8 @@
     </div>
 
     <!-- FOOTER -->
-    <footer class="mt-8 text-center text-xs text-gray-600">
-        OANDA v20 REST Algorithmic Trader &bull; London/NY Momentum Pullback Strategy &bull; Protected by Max 2 Losses Circuit Shield
+    <footer class="mt-8 text-center text-xs text-gray-500 pb-4">
+        OANDA v20 Algorithmic Trading Station &bull; Prop Firm Challenge Mode &bull; Dual-Shield Risk Protocol
     </footer>
 
     <!-- JAVASCRIPT APP LOGIC -->
@@ -374,17 +434,18 @@
                             label: 'Challenge Equity ($)',
                             data: [2000],
                             borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            borderWidth: 2,
+                            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                            borderWidth: 2.5,
                             fill: true,
                             tension: 0.25,
-                            pointRadius: 2
+                            pointRadius: 3,
+                            pointHoverRadius: 5
                         },
                         {
                             label: 'Target Ceiling ($2,160)',
                             data: [2160],
                             borderColor: '#10b981',
-                            borderWidth: 1,
+                            borderWidth: 1.5,
                             borderDash: [5, 5],
                             pointRadius: 0,
                             fill: false
@@ -393,7 +454,7 @@
                             label: 'Max Drawdown Floor ($1,840)',
                             data: [1840],
                             borderColor: '#ef4444',
-                            borderWidth: 1,
+                            borderWidth: 1.5,
                             borderDash: [5, 5],
                             pointRadius: 0,
                             fill: false
@@ -403,19 +464,34 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: {
-                            labels: { color: '#9ca3af', font: { size: 10 } }
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#cbd5e1',
+                            borderColor: '#334155',
+                            borderWidth: 1
                         }
                     },
                     scales: {
                         x: {
-                            grid: { color: '#1e293b' },
-                            ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 8 }
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 }, maxTicksLimit: 8 }
                         },
                         y: {
-                            grid: { color: '#1e293b' },
-                            ticks: { color: '#64748b', font: { size: 10 } },
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                            ticks: { 
+                                color: '#64748b', 
+                                font: { family: 'JetBrains Mono', size: 10 },
+                                callback: function(val) { return '$' + val; }
+                            },
                             min: 1800,
                             max: 2200
                         }
@@ -428,7 +504,8 @@
         function updateClock() {
             const now = new Date();
             const utcString = now.toUTCString().split(' ')[4] + ' UTC';
-            document.getElementById('utc-clock').innerText = utcString;
+            const el = document.getElementById('utc-clock');
+            if (el) el.innerText = utcString;
         }
         setInterval(updateClock, 1000);
         updateClock();
@@ -458,9 +535,9 @@
             const badge = document.getElementById('bot-status-badge');
             const status = risk.status || 'ACTIVE';
             isPaused = (status === 'PAUSED');
-            document.getElementById('pause-btn-text').innerText = isPaused ? 'Resume Bot' : 'Pause Bot';
+            document.getElementById('pause-btn-text').innerText = isPaused ? 'Resume' : 'Pause';
 
-            badge.className = "px-3 py-0.5 text-xs font-semibold rounded-full flex items-center gap-1.5 ";
+            badge.className = "px-2.5 py-0.5 text-[11px] font-semibold rounded-full flex items-center gap-1.5 whitespace-nowrap ";
             if (status === 'ACTIVE') {
                 badge.className += "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
                 badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ACTIVE & MONITORING';
@@ -500,27 +577,26 @@
 
             const totalLossValEl = document.getElementById('total-loss-val');
             totalLossValEl.innerText = `-$${overallLossUsd.toFixed(2)} (-${overallLossPct.toFixed(1)}%)`;
-            totalLossValEl.className = `text-2xl font-bold mt-1 mono ${overallLossUsd > 0 ? 'text-rose-400' : 'text-gray-100'}`;
+            totalLossValEl.className = `text-2xl sm:text-3xl font-extrabold mt-1.5 mono ${overallLossUsd > 0 ? 'text-rose-400' : 'text-gray-100'}`;
             
             document.getElementById('total-loss-pct').innerText = `${overallLossPct.toFixed(1)}% / 8.0%`;
-            document.getElementById('total-loss-buffer').innerText = `$${drawdownBufferUsd.toFixed(2)} buffer`;
+            document.getElementById('total-loss-buffer').innerText = `$${drawdownBufferUsd.toFixed(2)} cushion left`;
             
             const totalLossBar = document.getElementById('total-loss-bar');
             totalLossBar.style.width = `${drawdownUsedPct}%`;
             if (drawdownUsedPct > 50) {
-                totalLossBar.className = "bg-rose-500 h-2 rounded-full transition-all duration-500";
+                totalLossBar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
             } else if (drawdownUsedPct > 20) {
-                totalLossBar.className = "bg-amber-500 h-2 rounded-full transition-all duration-500";
+                totalLossBar.className = "bg-amber-400 h-full rounded-full transition-all duration-500";
             } else {
-                totalLossBar.className = "bg-emerald-500 h-2 rounded-full transition-all duration-500";
+                totalLossBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
             }
 
             // C. Today's Daily Loss (-5% / -$100 / 2 losses)
             const dailyPl = risk.daily_pl || 0.0;
-            const dailyLossPct = risk.daily_loss_pct || 0.0;
             const dailyPlEl = document.getElementById('daily-pl-usd');
             dailyPlEl.innerText = `${dailyPl >= 0 ? '+' : ''}$${dailyPl.toFixed(2)}`;
-            dailyPlEl.className = `text-2xl font-bold mt-1 mono ${dailyPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            dailyPlEl.className = `text-lg sm:text-xl font-bold mt-1 mono ${dailyPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
             
             const dailyLosses = risk.daily_losses_count || 0;
             const maxDailyLosses = risk.max_daily_losses || 2;
@@ -533,11 +609,11 @@
             const totalWins = risk.total_wins || 0;
             const totalLosses = risk.total_losses || 0;
             const winRate = risk.win_rate_pct || 0.0;
-            document.getElementById('win-rate-text').innerText = `${winRate}% (${totalWins}W / ${totalLosses}L)`;
+            document.getElementById('win-rate-text').innerText = `${winRate}% (${totalWins}W/${totalLosses}L)`;
 
             const totalNetPlEl = document.getElementById('total-net-pl');
-            totalNetPlEl.innerText = `${totalPl >= 0 ? '+' : ''}$${totalPl.toFixed(2)}`;
-            totalNetPlEl.className = `mono font-semibold ${totalPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            totalNetPlEl.innerText = `${totalPl >= 0 ? '+' : ''}$${totalPl.toFixed(2)} net`;
+            totalNetPlEl.className = `font-mono font-semibold ${totalPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
 
             // E. Real OANDA Broker Account
             document.getElementById('oanda-nav').innerText = `$${(acct.nav || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
@@ -546,12 +622,15 @@
             const floatPl = acct.unrealized_pl || 0.0;
             const floatPlEl = document.getElementById('floating-pl');
             floatPlEl.innerText = `${floatPl >= 0 ? '+' : ''}$${floatPl.toFixed(2)}`;
-            floatPlEl.className = `mono font-semibold ${floatPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            floatPlEl.className = `font-mono font-bold ${floatPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            // F. Tile active count
+            document.getElementById('open-trades-badge-count-tile').innerText = `${openTrades.length} Active Position${openTrades.length === 1 ? '' : 's'}`;
 
             // Status message
             document.getElementById('status-message-text').innerText = risk.status_message || 'Monitoring market.';
             document.getElementById('market-session-indicator').innerHTML = market.session_active
-                ? '<span class="text-emerald-400 font-medium"><i class="fa-solid fa-bolt mr-1"></i> London/NY Active</span>'
+                ? '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-bolt mr-1"></i> London/NY Active</span>'
                 : `<span class="text-amber-400"><i class="fa-solid fa-moon mr-1"></i> ${market.session_msg || 'Off Hours'}</span>`;
 
             // Live Market Quotes Ticker
@@ -566,25 +645,25 @@
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
                         : 'bg-amber-500/10 text-amber-400 border-amber-500/30';
                     return `
-                        <div class="bg-gray-900/90 border border-gray-800 rounded-xl p-3.5 shadow-md flex items-center justify-between">
+                        <div class="glass-panel rounded-xl p-3 sm:p-3.5 shadow-md flex items-center justify-between">
                             <div class="flex items-center gap-2.5">
                                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                 <div>
                                     <div class="font-bold text-white text-sm mono">${inst.replace('_', '/')}</div>
-                                    <div class="text-[10px] text-gray-500 uppercase tracking-widest">OANDA Live Quote</div>
+                                    <div class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">Live Institutional Quote</div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-3 sm:gap-4">
                                 <div class="text-right">
-                                    <div class="text-[10px] text-gray-500 uppercase">Bid / Ask</div>
-                                    <div class="font-mono text-xs md:text-sm font-semibold">
+                                    <div class="text-[10px] text-gray-500 uppercase font-semibold">Bid / Ask</div>
+                                    <div class="font-mono text-xs sm:text-sm font-semibold">
                                         <span class="text-rose-400">${p.bid.toFixed(5)}</span>
-                                        <span class="text-gray-500 mx-1">/</span>
+                                        <span class="text-gray-500 mx-0.5">/</span>
                                         <span class="text-blue-400">${p.ask.toFixed(5)}</span>
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-[10px] text-gray-500 uppercase">Spread</div>
+                                    <div class="text-[10px] text-gray-500 uppercase font-semibold">Spread</div>
                                     <span class="px-2 py-0.5 text-xs font-mono font-bold rounded border ${spreadClass}">
                                         ${spread.toFixed(1)} pips
                                     </span>
@@ -594,18 +673,26 @@
                 }).join('');
             }
 
-            // 3. Open Positions Table (Detailed)
+            // 3. Open Positions (Dual Display: Table on Desktop, Cards on Mobile)
             document.getElementById('open-trades-badge-count').innerText = openTrades.length;
             const openTbody = document.getElementById('open-trades-tbody');
+            const openMobileCards = document.getElementById('open-trades-mobile-cards');
+
             if (openTrades.length === 0) {
                 openTbody.innerHTML = `
                     <tr>
                         <td colspan="10" class="py-8 text-center text-gray-500 font-sans">
-                            <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
-                            No active trades running. Bot is scanning for confirmed pullbacks.
+                            <i class="fa-solid fa-inbox text-2xl mb-2 block text-gray-600"></i>
+                            No active positions open. Bot is continuously scanning for M15 pullbacks.
                         </td>
                     </tr>`;
+                openMobileCards.innerHTML = `
+                    <div class="py-6 text-center text-gray-500 text-xs">
+                        <i class="fa-solid fa-inbox text-xl mb-1.5 block text-gray-600"></i>
+                        No active positions open.
+                    </div>`;
             } else {
+                // Desktop Table Rows
                 openTbody.innerHTML = openTrades.map(t => {
                     const upl = parseFloat(t.unrealized_pl || 0);
                     const units = parseInt(t.units || 0);
@@ -626,22 +713,60 @@
                             <td class="py-3 px-3 text-rose-400">${t.stop_loss ? parseFloat(t.stop_loss).toFixed(5) : '--'}</td>
                             <td class="py-3 px-3 text-emerald-400">${t.take_profit ? parseFloat(t.take_profit).toFixed(5) : '--'}</td>
                             <td class="py-3 px-3 font-bold ${upl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
-                                ${upl >= 0 ? '+' : ''}$${upl.toFixed(2)} (${pips >= 0 ? '+' : ''}${pips} pips)
+                                ${upl >= 0 ? '+' : ''}$${upl.toFixed(2)} (${pips >= 0 ? '+' : ''}${pips}p)
                             </td>
                             <td class="py-3 px-3 text-right">
-                                <button onclick="closeSingleTrade('${t.id}')" class="px-2.5 py-1 text-xs rounded bg-rose-900/50 hover:bg-rose-800 text-rose-200 border border-rose-700/50 transition font-sans">
+                                <button onclick="closeSingleTrade('${t.id}')" class="px-2.5 py-1 text-xs rounded bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/50 transition font-sans font-semibold">
                                     Close
                                 </button>
                             </td>
                         </tr>`;
                 }).join('');
+
+                // Mobile Cards (Zero Overflow)
+                openMobileCards.innerHTML = openTrades.map(t => {
+                    const upl = parseFloat(t.unrealized_pl || 0);
+                    const units = parseInt(t.units || 0);
+                    const isLong = t.direction === "BUY";
+                    const pips = t.pips !== undefined ? t.pips : 0.0;
+                    return `
+                        <div class="glass-panel rounded-xl p-3.5 border ${upl >= 0 ? 'border-emerald-500/30' : 'border-rose-500/30'}">
+                            <div class="flex items-center justify-between pb-2 border-b border-gray-800 mb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 text-xs font-bold rounded ${isLong ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}">
+                                        ${t.direction}
+                                    </span>
+                                    <span class="font-bold text-white text-sm mono">${t.instrument}</span>
+                                    <span class="text-xs text-gray-400 font-mono">#${t.id}</span>
+                                </div>
+                                <button onclick="closeSingleTrade('${t.id}')" class="px-2.5 py-1 text-xs rounded bg-rose-900/70 hover:bg-rose-800 text-rose-200 border border-rose-700/50 font-semibold">
+                                    Close
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs font-mono mb-2">
+                                <div><span class="text-gray-500">Entry:</span> <span class="text-gray-200 font-semibold">${parseFloat(t.open_price).toFixed(5)}</span></div>
+                                <div><span class="text-gray-500">Live:</span> <span class="text-blue-300 font-semibold">${parseFloat(t.current_price).toFixed(5)}</span></div>
+                                <div><span class="text-gray-500">SL:</span> <span class="text-rose-400">${t.stop_loss ? parseFloat(t.stop_loss).toFixed(5) : '--'}</span></div>
+                                <div><span class="text-gray-500">TP:</span> <span class="text-emerald-400">${t.take_profit ? parseFloat(t.take_profit).toFixed(5) : '--'}</span></div>
+                            </div>
+                            <div class="flex items-center justify-between pt-2 border-t border-gray-800/80">
+                                <span class="text-[11px] text-gray-400 font-mono">${Math.abs(units).toLocaleString()} units</span>
+                                <span class="font-mono font-bold text-sm ${upl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                                    ${upl >= 0 ? '+' : ''}$${upl.toFixed(2)} (${pips >= 0 ? '+' : ''}${pips} pips)
+                                </span>
+                            </div>
+                        </div>`;
+                }).join('');
             }
 
             // 4. Closed Trades History (Detailed)
             const closedTbody = document.getElementById('closed-trades-tbody');
+            const closedMobileCards = document.getElementById('closed-trades-mobile-cards');
             document.getElementById('total-trades-summary').innerText = `${closedTrades.length} recorded`;
+
             if (closedTrades.length === 0) {
                 closedTbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-gray-500 font-sans">No closed trades recorded yet.</td></tr>`;
+                closedMobileCards.innerHTML = `<div class="py-6 text-center text-gray-500 text-xs">No closed trades recorded yet.</div>`;
             } else {
                 closedTbody.innerHTML = closedTrades.map(t => {
                     const pl = parseFloat(t.realized_pl || 0);
@@ -666,6 +791,31 @@
                             </td>
                             <td class="py-2.5 px-3 text-right text-gray-500">${closeTime} UTC</td>
                         </tr>`;
+                }).join('');
+
+                closedMobileCards.innerHTML = closedTrades.map(t => {
+                    const pl = parseFloat(t.realized_pl || 0);
+                    const isLong = t.direction === "BUY";
+                    const closeTime = t.close_time ? t.close_time.substring(0, 16).replace('T', ' ') : '--';
+                    return `
+                        <div class="glass-panel rounded-xl p-3 border border-gray-800 flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-white text-xs mono">${t.instrument}</span>
+                                    <span class="text-[10px] font-bold ${isLong ? 'text-emerald-400' : 'text-rose-400'}">(${t.direction})</span>
+                                    <span class="text-[10px] text-gray-500 font-mono">#${t.id}</span>
+                                </div>
+                                <div class="text-[10px] text-gray-400 font-mono mt-0.5">${closeTime} UTC</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold font-mono text-sm ${pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                                    ${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}
+                                </div>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded font-semibold ${pl >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                                    ${t.result}
+                                </span>
+                            </div>
+                        </div>`;
                 }).join('');
             }
 

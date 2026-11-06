@@ -30,6 +30,7 @@ class Config:
         STREAM_URL = "https://stream-fxpractice.oanda.com/v3"
 
     # Prop Challenge & Capital Rules (User Target: 8% gain in 3 days, 5% daily loss limit, 8% max loss)
+    CHALLENGE_START_DATE = os.getenv("CHALLENGE_START_DATE", "2026-11-05").strip()
     VIRTUAL_CAPITAL = float(os.getenv("VIRTUAL_CAPITAL", "2000.0"))
     TARGET_PROFIT_PCT = float(os.getenv("TARGET_PROFIT_PCT", "8.0"))       # 8% target ($160 on $2,000)
     MAX_DRAWDOWN_PCT = float(os.getenv("MAX_DRAWDOWN_PCT", "8.0"))         # 8% max total loss ($160 on $2,000)
