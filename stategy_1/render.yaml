@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: oanda-forex-bot
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: OANDA_API_KEY
+        sync: false
+      - key: OANDA_ACCOUNT_ID
+        sync: false
+      - key: OANDA_ENV
+        value: practice
+      - key: VIRTUAL_CAPITAL
+        value: "2000.0"
+      - key: TARGET_PROFIT_PCT
+        value: "8.0"
+      - key: MAX_DRAWDOWN_PCT
+        value: "8.0"
+      - key: MAX_DAILY_LOSS_PCT
+        value: "5.0"
+      - key: DAILY_CIRCUIT_BREAKER_PCT
+        value: "3.5"
+      - key: MAX_DAILY_LOSSES
+        value: "2"
+      - key: RISK_PER_TRADE_PCT
+        value: "1.25"
+      - key: RISK_REWARD_RATIO
+        value: "2.0"
+      - key: INSTRUMENTS
+        value: "GBP_USD,EUR_USD"
+      - key: TIMEFRAME
+        value: "M15"
+      - key: MAX_CONCURRENT_TRADES
+        value: "1"
+      - key: MAX_TRADES_PER_DAY
+        value: "3"
+      - key: SESSION_FILTER_ENABLED
+        value: "true"
+      - key: SESSION_START_HOUR_UTC
+        value: "7"
+      - key: SESSION_END_HOUR_UTC
+        value: "17"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DASHBOARD_USERNAME
+        value: "admin"
+      - key: DASHBOARD_PASSWORD
+        sync: false
+

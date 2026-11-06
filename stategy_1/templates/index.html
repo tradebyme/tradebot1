@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OANDA Forex Bot | $2k Prop Challenge Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080c14;
+            color: #e2e8f0;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-3 md:p-6 lg:p-8 flex flex-col justify-between">
+
+    <div class="max-w-7xl mx-auto w-full space-y-6">
+
+        <!-- HEADER SECTION -->
+        <header class="bg-gray-900/90 backdrop-blur border border-gray-800 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-robot text-white text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white">OANDA v20 Forex Trader</h1>
+                        <span id="bot-status-badge" class="px-3 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            ACTIVE & MONITORING
+                        </span>
+                    </div>
+                    <p class="text-xs md:text-sm text-gray-400 mt-0.5">
+                        Target: <span class="text-emerald-400 font-semibold">+8% ($160)</span> | Daily Stop: <span class="text-rose-400 font-semibold">Max 2 Losses (-$50)</span> | Max Loss: <span class="text-rose-400 font-semibold">-8% ($160)</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="text-right hidden sm:block pr-3 border-r border-gray-800">
+                    <div class="text-[10px] text-gray-500 uppercase tracking-widest">UTC Time</div>
+                    <div id="utc-clock" class="text-sm font-semibold mono text-gray-200">--:--:-- UTC</div>
+                </div>
+
+                <!-- CONTROLS -->
+                <button id="btn-pause" onclick="togglePause()" class="px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-pause"></i>
+                    <span id="pause-btn-text">Pause Bot</span>
+                </button>
+                <button onclick="forceScan()" class="px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 transition flex items-center gap-2">
+                    <i id="scan-icon" class="fa-solid fa-bolt"></i>
+                    <span>Scan Now</span>
+                </button>
+                <button onclick="confirmCloseAll()" class="px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 transition flex items-center gap-2">
+                    <i class="fa-solid fa-power-off"></i>
+                    <span>Close All</span>
+                </button>
+                <a href="/logout" title="Log Out" class="px-3 py-2 text-xs md:text-sm font-medium rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 transition flex items-center">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- KPI SUMMARY CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- CARD 1: CHALLENGE TARGET PROGRESS -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Target Goal (+8%)</span>
+                        <div class="text-2xl font-bold mt-1 text-white mono" id="total-profit-usd">+$0.00</div>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Progress: <span id="target-progress-pct" class="text-emerald-400 font-semibold">0%</span></span>
+                        <span>Target: +$160.00</span>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                        <div id="target-progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 2: DAILY LOSS GUARD (5% CEILING / 2 LOSS STOP) -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Today's PnL & Safety</span>
+                        <div class="text-2xl font-bold mt-1 text-white mono" id="daily-pl-usd">$0.00</div>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Daily Losses: <span id="daily-losses-text" class="text-amber-400 font-semibold">0 / 2 max</span></span>
+                        <span>Limit: -$100.00</span>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                        <div id="daily-loss-bar" class="bg-rose-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 3: CHALLENGE STATS & WIN RATE -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Challenge Equity ($2k Base)</span>
+                        <div class="text-2xl font-bold mt-1 text-white mono" id="challenge-equity">$2,000.00</div>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-400 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Win Rate:</span>
+                        <span class="mono text-emerald-400 font-semibold" id="win-rate-text">0.0% (0W / 0L)</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Max Drawdown Floor:</span>
+                        <span class="mono text-rose-400 font-medium">$1,840.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 4: REAL OANDA BROKER ACCOUNT -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">OANDA Account NAV</span>
+                        <div class="text-2xl font-bold mt-1 text-white mono" id="oanda-nav">$0.00</div>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                        <i class="fa-solid fa-server"></i>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-400 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Margin Available:</span>
+                        <span class="mono text-gray-200" id="margin-avail">$0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Floating PnL:</span>
+                        <span class="mono font-semibold" id="floating-pl">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- STATUS MESSAGE BANNER -->
+        <div id="status-banner" class="bg-blue-950/40 border border-blue-800/40 rounded-xl p-3 px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs md:text-sm text-blue-300">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-blue-400"></i>
+                <span id="status-message-text">Monitoring London/New York session market conditions.</span>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-gray-400">
+                <span id="market-session-indicator"><i class="fa-regular fa-clock mr-1"></i> Checking session...</span>
+            </div>
+        </div>
+
+        <!-- LIVE MARKET WATCH TICKER -->
+        <div id="live-quotes-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Dynamically populated with real-time Bid/Ask/Spread from OANDA -->
+        </div>
+
+        <!-- LIVE OPEN TRADES TABLE -->
+        <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                        <i class="fa-solid fa-bolt-lightning"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Currently Running Trades</h2>
+                        <p class="text-xs text-gray-400">Real-time open positions on OANDA with live PnL and pip metrics</p>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 text-xs font-mono font-bold rounded-full bg-gray-800 text-gray-200 border border-gray-700">
+                    <span id="open-trades-badge-count">0</span> ACTIVE
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="text-gray-400 uppercase bg-gray-950/60 border-b border-gray-800">
+                        <tr>
+                            <th class="py-3 px-3">Ticket</th>
+                            <th class="py-3 px-3">Pair</th>
+                            <th class="py-3 px-3">Direction</th>
+                            <th class="py-3 px-3">Units</th>
+                            <th class="py-3 px-3">Entry Price</th>
+                            <th class="py-3 px-3">Live Price</th>
+                            <th class="py-3 px-3">Stop Loss</th>
+                            <th class="py-3 px-3">Take Profit</th>
+                            <th class="py-3 px-3">Floating PnL</th>
+                            <th class="py-3 px-3 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="open-trades-tbody" class="divide-y divide-gray-800 font-mono">
+                        <tr>
+                            <td colspan="10" class="py-8 text-center text-gray-500 font-sans">
+                                <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
+                                No active trades running. Bot is scanning for confirmed pullbacks.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CHARTS & PERFORMANCE TRAJECTORY -->
+        <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-chart-area text-blue-400"></i>
+                        Challenge Equity Trajectory ($2k Starting Base)
+                    </h2>
+                    <p class="text-xs text-gray-400">Target Ceiling: $2,160 (+8%) | Max Drawdown Floor: $1,840 (-8%)</p>
+                </div>
+                <button onclick="resetChallenge()" class="text-xs text-gray-500 hover:text-rose-400 transition underline">
+                    Reset Baseline
+                </button>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="equityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- TRADE HISTORY & TERMINAL LOGS GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- CLOSED TRADES HISTORY -->
+            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+                        <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Completed Trades History</h2>
+                    </div>
+                    <span class="text-xs text-gray-400 font-mono" id="total-trades-summary">0 trades recorded</span>
+                </div>
+                <div class="overflow-x-auto max-h-72">
+                    <table class="w-full text-left text-xs text-gray-400">
+                        <thead class="text-gray-500 uppercase border-b border-gray-800 bg-gray-950/50">
+                            <tr>
+                                <th class="py-2.5 px-3">Ticket</th>
+                                <th class="py-2.5 px-3">Pair</th>
+                                <th class="py-2.5 px-3">Units</th>
+                                <th class="py-2.5 px-3">Entry / Exit</th>
+                                <th class="py-2.5 px-3">Realized PnL</th>
+                                <th class="py-2.5 px-3 text-right">Close Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="closed-trades-tbody" class="divide-y divide-gray-800/60 font-mono">
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-gray-500 font-sans">
+                                    No closed trades recorded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LIVE ACTIVITY FEED (TERMINAL STYLE) -->
+            <div class="bg-black/90 border border-gray-800 rounded-2xl p-4 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-800">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                        <span class="text-xs font-semibold text-gray-400 ml-2 font-mono">bot_stream.log</span>
+                    </div>
+                    <span class="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        LIVE
+                    </span>
+                </div>
+                <div id="terminal-feed" class="flex-1 overflow-y-auto max-h-72 text-xs font-mono space-y-1.5 p-2 bg-black rounded-lg">
+                    <div class="text-gray-500">Connecting to trading engine stream...</div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-8 text-center text-xs text-gray-600">
+        OANDA v20 REST Algorithmic Trader &bull; London/NY Momentum Pullback Strategy &bull; Protected by Max 2 Losses Circuit Shield
+    </footer>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        let equityChart = null;
+        let isPaused = false;
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            equityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Start'],
+                    datasets: [
+                        {
+                            label: 'Challenge Equity ($)',
+                            data: [2000],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.25,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'Target Ceiling ($2,160)',
+                            data: [2160],
+                            borderColor: '#10b981',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Max Drawdown Floor ($1,840)',
+                            data: [1840],
+                            borderColor: '#ef4444',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#9ca3af', font: { size: 10 } }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 8 }
+                        },
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b', font: { size: 10 } },
+                            min: 1800,
+                            max: 2200
+                        }
+                    }
+                }
+            });
+        }
+
+        // Live UTC Clock
+        function updateClock() {
+            const now = new Date();
+            const utcString = now.toUTCString().split(' ')[4] + ' UTC';
+            document.getElementById('utc-clock').innerText = utcString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Fetch Dashboard Data from /api/status
+        async function fetchDashboard() {
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) return;
+                const data = await res.json();
+                renderUI(data);
+            } catch (err) {
+                console.error("Dashboard fetch error:", err);
+            }
+        }
+
+        // Render data onto Dashboard
+        function renderUI(data) {
+            const risk = data.risk || {};
+            const acct = data.account || {};
+            const market = data.market_status || {};
+            const openTrades = data.open_trades || [];
+            const closedTrades = data.closed_trades || [];
+            const logs = data.logs || [];
+
+            // 1. Status Badge
+            const badge = document.getElementById('bot-status-badge');
+            const status = risk.status || 'ACTIVE';
+            isPaused = (status === 'PAUSED');
+            document.getElementById('pause-btn-text').innerText = isPaused ? 'Resume Bot' : 'Pause Bot';
+
+            badge.className = "px-3 py-0.5 text-xs font-semibold rounded-full flex items-center gap-1.5 ";
+            if (status === 'ACTIVE') {
+                badge.className += "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ACTIVE & MONITORING';
+            } else if (status === 'TARGET_HIT') {
+                badge.className += "bg-blue-500/20 text-blue-300 border border-blue-500/30";
+                badge.innerHTML = '<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> TARGET ACHIEVED (+8%)';
+            } else if (status === 'DAILY_LIMIT_HIT') {
+                badge.className += "bg-rose-500/20 text-rose-300 border border-rose-500/30";
+                badge.innerHTML = '<i class="fa-solid fa-shield text-rose-400 mr-1"></i> DAILY CIRCUIT STOPPED';
+            } else if (status === 'PAUSED') {
+                badge.className += "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                badge.innerHTML = '<i class="fa-solid fa-pause text-amber-400 mr-1"></i> PAUSED';
+            } else {
+                badge.className += "bg-gray-700 text-gray-300";
+                badge.innerHTML = status;
+            }
+
+            // 2. Metrics & Cards
+            const totalPl = risk.total_pl || 0.0;
+            const totalGainPct = risk.total_gain_pct || 0.0;
+            const totalProfitEl = document.getElementById('total-profit-usd');
+            totalProfitEl.innerText = `${totalPl >= 0 ? '+' : ''}$${totalPl.toFixed(2)} (${totalGainPct >= 0 ? '+' : ''}${totalGainPct.toFixed(1)}%)`;
+            totalProfitEl.className = `text-2xl font-bold mt-1 mono ${totalPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            const targetProgress = Math.max(0, Math.min(100, risk.target_progress_pct || 0));
+            document.getElementById('target-progress-pct').innerText = `${targetProgress}%`;
+            document.getElementById('target-progress-bar').style.width = `${targetProgress}%`;
+
+            const dailyPl = risk.daily_pl || 0.0;
+            const dailyPlEl = document.getElementById('daily-pl-usd');
+            dailyPlEl.innerText = `${dailyPl >= 0 ? '+' : ''}$${dailyPl.toFixed(2)}`;
+            dailyPlEl.className = `text-2xl font-bold mt-1 mono ${dailyPl >= 0 ? 'text-gray-100' : 'text-rose-400'}`;
+            
+            // Daily Loss Bar & Text
+            const dailyLosses = risk.daily_losses_count || 0;
+            const maxDailyLosses = risk.max_daily_losses || 2;
+            document.getElementById('daily-losses-text').innerText = `${dailyLosses} / ${maxDailyLosses} max`;
+            const dailyLossBarPct = Math.min(100, (dailyLosses / maxDailyLosses) * 100);
+            document.getElementById('daily-loss-bar').style.width = `${dailyLossBarPct}%`;
+
+            // Equity, Win Rate & OANDA
+            document.getElementById('challenge-equity').innerText = `$${(risk.current_equity || 2000).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            const totalWins = risk.total_wins || 0;
+            const totalLosses = risk.total_losses || 0;
+            const winRate = risk.win_rate_pct || 0.0;
+            document.getElementById('win-rate-text').innerText = `${winRate}% (${totalWins}W / ${totalLosses}L)`;
+
+            document.getElementById('oanda-nav').innerText = `$${(acct.nav || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('margin-avail').innerText = `$${(acct.margin_available || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+
+            const floatPl = acct.unrealized_pl || 0.0;
+            const floatPlEl = document.getElementById('floating-pl');
+            floatPlEl.innerText = `${floatPl >= 0 ? '+' : ''}$${floatPl.toFixed(2)}`;
+            floatPlEl.className = `mono font-semibold ${floatPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            // Status message
+            document.getElementById('status-message-text').innerText = risk.status_message || 'Monitoring market.';
+            document.getElementById('market-session-indicator').innerHTML = market.session_active
+                ? '<span class="text-emerald-400 font-medium"><i class="fa-solid fa-bolt mr-1"></i> London/NY Active</span>'
+                : `<span class="text-amber-400"><i class="fa-solid fa-moon mr-1"></i> ${market.session_msg || 'Off Hours'}</span>`;
+
+            // Live Market Quotes Ticker
+            const quotesContainer = document.getElementById('live-quotes-container');
+            const livePrices = data.live_prices || {};
+            const pairs = Object.keys(livePrices);
+            if (pairs.length > 0 && quotesContainer) {
+                quotesContainer.innerHTML = pairs.map(inst => {
+                    const p = livePrices[inst];
+                    const spread = p.spread_pips || 0.0;
+                    const spreadClass = spread <= 1.5 
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+                    return `
+                        <div class="bg-gray-900/90 border border-gray-800 rounded-xl p-3.5 shadow-md flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <div>
+                                    <div class="font-bold text-white text-sm mono">${inst.replace('_', '/')}</div>
+                                    <div class="text-[10px] text-gray-500 uppercase tracking-widest">OANDA Live Quote</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <div class="text-[10px] text-gray-500 uppercase">Bid / Ask</div>
+                                    <div class="font-mono text-xs md:text-sm font-semibold">
+                                        <span class="text-rose-400">${p.bid.toFixed(5)}</span>
+                                        <span class="text-gray-500 mx-1">/</span>
+                                        <span class="text-blue-400">${p.ask.toFixed(5)}</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[10px] text-gray-500 uppercase">Spread</div>
+                                    <span class="px-2 py-0.5 text-xs font-mono font-bold rounded border ${spreadClass}">
+                                        ${spread.toFixed(1)} pips
+                                    </span>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
+            // 3. Open Positions Table (Detailed)
+            document.getElementById('open-trades-badge-count').innerText = openTrades.length;
+            const openTbody = document.getElementById('open-trades-tbody');
+            if (openTrades.length === 0) {
+                openTbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="py-8 text-center text-gray-500 font-sans">
+                            <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
+                            No active trades running. Bot is scanning for confirmed pullbacks.
+                        </td>
+                    </tr>`;
+            } else {
+                openTbody.innerHTML = openTrades.map(t => {
+                    const upl = parseFloat(t.unrealized_pl || 0);
+                    const units = parseInt(t.units || 0);
+                    const isLong = t.direction === "BUY";
+                    const pips = t.pips !== undefined ? t.pips : 0.0;
+                    return `
+                        <tr class="hover:bg-gray-800/40 transition">
+                            <td class="py-3 px-3 text-gray-400">#${t.id}</td>
+                            <td class="py-3 px-3 text-white font-bold">${t.instrument}</td>
+                            <td class="py-3 px-3">
+                                <span class="px-2 py-0.5 text-[11px] font-bold rounded ${isLong ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}">
+                                    ${t.direction}
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-gray-300">${Math.abs(units).toLocaleString()}</td>
+                            <td class="py-3 px-3 text-gray-200">${parseFloat(t.open_price).toFixed(5)}</td>
+                            <td class="py-3 px-3 text-blue-300 font-semibold">${parseFloat(t.current_price).toFixed(5)}</td>
+                            <td class="py-3 px-3 text-rose-400">${t.stop_loss ? parseFloat(t.stop_loss).toFixed(5) : '--'}</td>
+                            <td class="py-3 px-3 text-emerald-400">${t.take_profit ? parseFloat(t.take_profit).toFixed(5) : '--'}</td>
+                            <td class="py-3 px-3 font-bold ${upl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${upl >= 0 ? '+' : ''}$${upl.toFixed(2)} (${pips >= 0 ? '+' : ''}${pips} pips)
+                            </td>
+                            <td class="py-3 px-3 text-right">
+                                <button onclick="closeSingleTrade('${t.id}')" class="px-2.5 py-1 text-xs rounded bg-rose-900/50 hover:bg-rose-800 text-rose-200 border border-rose-700/50 transition font-sans">
+                                    Close
+                                </button>
+                            </td>
+                        </tr>`;
+                }).join('');
+            }
+
+            // 4. Closed Trades History (Detailed)
+            const closedTbody = document.getElementById('closed-trades-tbody');
+            document.getElementById('total-trades-summary').innerText = `${closedTrades.length} recorded`;
+            if (closedTrades.length === 0) {
+                closedTbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-gray-500 font-sans">No closed trades recorded yet.</td></tr>`;
+            } else {
+                closedTbody.innerHTML = closedTrades.map(t => {
+                    const pl = parseFloat(t.realized_pl || 0);
+                    const isLong = t.direction === "BUY";
+                    const closeTime = t.close_time ? t.close_time.substring(11, 19) : '--:--:--';
+                    return `
+                        <tr class="hover:bg-gray-800/40 transition">
+                            <td class="py-2.5 px-3 text-gray-400">#${t.id}</td>
+                            <td class="py-2.5 px-3 text-white font-semibold">
+                                ${t.instrument} 
+                                <span class="text-[10px] ${isLong ? 'text-emerald-400' : 'text-rose-400'}">(${t.direction})</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-gray-300">${t.units ? t.units.toLocaleString() : '--'}</td>
+                            <td class="py-2.5 px-3 text-gray-400 text-xs">
+                                ${t.open_price ? t.open_price.toFixed(5) : '--'} &rarr; ${t.close_price ? t.close_price.toFixed(5) : '--'}
+                            </td>
+                            <td class="py-2.5 px-3 font-bold ${pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}
+                                <span class="ml-1 text-[10px] px-1.5 py-0.2 rounded font-sans ${pl >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                                    ${t.result}
+                                </span>
+                            </td>
+                            <td class="py-2.5 px-3 text-right text-gray-500">${closeTime} UTC</td>
+                        </tr>`;
+                }).join('');
+            }
+
+            // 5. Terminal Logs Feed
+            const term = document.getElementById('terminal-feed');
+            if (logs.length > 0) {
+                term.innerHTML = logs.map(l => {
+                    let color = 'text-gray-300';
+                    if (l.level === 'WARNING') color = 'text-amber-400';
+                    if (l.level === 'ERROR') color = 'text-rose-400';
+                    if (l.message.includes('SIGNAL') || l.message.includes('ORDER')) color = 'text-emerald-400 font-bold';
+                    return `<div><span class="text-gray-500">[${l.time}]</span> <span class="${color}">${l.message}</span></div>`;
+                }).join('');
+                term.scrollTop = term.scrollHeight;
+            }
+
+            // 6. Update Equity Chart
+            if (equityChart && risk.equity_history && risk.equity_history.length > 0) {
+                const labels = risk.equity_history.map(h => h.time ? h.time.substring(11, 16) : '');
+                const dataPoints = risk.equity_history.map(h => h.equity);
+                
+                equityChart.data.labels = labels;
+                equityChart.data.datasets[0].data = dataPoints;
+                equityChart.data.datasets[1].data = labels.map(() => 2160);
+                equityChart.data.datasets[2].data = labels.map(() => 1840);
+                equityChart.update('none');
+            }
+        }
+
+        // Action: Toggle Pause
+        async function togglePause() {
+            try {
+                const res = await fetch('/api/bot/toggle_pause', { method: 'POST' });
+                await fetchDashboard();
+            } catch (err) {
+                alert("Failed to toggle pause: " + err);
+            }
+        }
+
+        // Action: Force Scan
+        async function forceScan() {
+            const icon = document.getElementById('scan-icon');
+            icon.classList.add('animate-spin');
+            try {
+                await fetch('/api/bot/scan', { method: 'POST' });
+                await fetchDashboard();
+            } catch (err) {
+                alert("Scan failed: " + err);
+            } finally {
+                icon.classList.remove('animate-spin');
+            }
+        }
+
+        // Action: Close Single Trade
+        async function closeSingleTrade(tradeId) {
+            if (!confirm(`Are you sure you want to manually close Trade #${tradeId}?`)) return;
+            try {
+                await fetch(`/api/bot/close_trade/${tradeId}`, { method: 'POST' });
+                fetchDashboard();
+            } catch (err) {
+                alert("Close trade failed: " + err);
+            }
+        }
+
+        // Action: Emergency Close All
+        async function confirmCloseAll() {
+            if (!confirm("⚠️ EMERGENCY WARNING: This will immediately CLOSE ALL active positions on OANDA. Are you sure?")) return;
+            try {
+                await fetch('/api/bot/close_all', { method: 'POST' });
+                fetchDashboard();
+            } catch (err) {
+                alert("Emergency close failed: " + err);
+            }
+        }
+
+        // Action: Reset Challenge
+        async function resetChallenge() {
+            if (!confirm("Reset challenge tracking to initial $2,000 baseline?")) return;
+            try {
+                await fetch('/api/bot/reset_challenge', { method: 'POST' });
+                fetchDashboard();
+            } catch (err) {
+                alert("Reset failed: " + err);
+            }
+        }
+
+        // Initialize on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            fetchDashboard();
+            // Auto-refresh every 3 seconds
+            setInterval(fetchDashboard, 3000);
+        });
+    </script>
+</body>
+</html>
