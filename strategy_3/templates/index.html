@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SMC Liquidity Sweep | Strategy 3 Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #070a13;
+            --surface: #0f172a;
+            --surface-elevated: #1e293b;
+            --border: #334155;
+            --primary: #38bdf8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            width: 100%;
+        }
+        .container {
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        /* Top Navigation Header */
+        header {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo-wrap { display: flex; align-items: center; gap: 0.75rem; }
+        .logo-badge {
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            letter-spacing: 0.05em;
+        }
+        .logo-title h1 { font-size: 1.15rem; font-weight: 700; color: #fff; }
+        .logo-title p { font-size: 0.78rem; color: var(--text-muted); }
+
+        .header-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+        .time-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: var(--surface-elevated);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.35rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-logout:hover { color: #fff; border-color: var(--primary); }
+
+        /* KPI Metric Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+        .kpi-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.15rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted); letter-spacing: 0.05em; }
+        .kpi-value { font-size: 1.6rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .kpi-sub { font-size: 0.78rem; color: var(--text-muted); }
+        .text-green { color: var(--success); }
+        .text-red { color: var(--danger); }
+        .text-blue { color: var(--primary); }
+
+        /* Main Content 2-Column Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.25rem;
+            width: 100%;
+        }
+        @media (max-width: 1080px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Chart Section */
+        .card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .card-title { font-size: 1rem; font-weight: 700; color: #fff; }
+        .pair-pills { display: flex; gap: 0.4rem; }
+        .pair-btn {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .pair-btn.active, .pair-btn:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+
+        .chart-container {
+            width: 100%;
+            height: 480px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        /* Active Trade Panel */
+        .active-trade-box {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .trade-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            padding-bottom: 0.35rem;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+        }
+        .trade-row:last-child { border-bottom: none; }
+        .trade-label { color: var(--text-muted); }
+        .trade-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+        /* Tables & Lists */
+        .table-wrap { overflow-x: auto; width: 100%; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+        th { background: var(--surface-elevated); padding: 0.65rem 0.75rem; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        td { padding: 0.65rem 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+
+        /* Console Logs Terminal */
+        .log-terminal {
+            background-color: #060911;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.85rem 1rem;
+            height: 250px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .log-line { line-height: 1.4; word-break: break-all; }
+        .log-time { color: var(--text-muted); margin-right: 0.5rem; }
+        .log-info { color: #38bdf8; }
+        .log-warn { color: #f59e0b; }
+        .log-err { color: #ef4444; }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo-wrap">
+                <span class="logo-badge">STRATEGY 3</span>
+                <div class="logo-title">
+                    <h1>ICT / SMC Liquidity Sweep Bot</h1>
+                    <p>Asian Session Range Sweep & Judas Swing Execution Engine</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="status-pill" id="botStatusPill">
+                    <span class="status-dot"></span>
+                    <span id="botStatusText">INITIALIZING</span>
+                </div>
+                <div class="time-display" id="utcClock">--:--:-- UTC</div>
+                <a href="/logout" class="btn-logout">Sign Out</a>
+            </div>
+        </header>
+
+        <!-- KPI Hero Cards -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-title">Current Balance</span>
+                <span class="kpi-value text-blue" id="kpiBalance">$2,000.00</span>
+                <span class="kpi-sub">Baseline: $2,000.00</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-title">Total Realized PnL</span>
+                <span class="kpi-value" id="kpiNetPnl">$0.00</span>
+                <span class="kpi-sub" id="kpiTargetProgress">Target: +$160.00 (+8%)</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-title">Today's PnL</span>
+                <span class="kpi-value" id="kpiTodayPnl">$0.00</span>
+                <span class="kpi-sub" id="kpiCircuitBreaker">Circuit Breaker: 0/2 Losses</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-title">Win Rate & Trades</span>
+                <span class="kpi-value" id="kpiWinRate">0.0%</span>
+                <span class="kpi-sub" id="kpiTradesDetail">0 Wins / 0 Losses</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-title">Prop Challenge Status</span>
+                <span class="kpi-value text-green" id="kpiStatus">ACTIVE</span>
+                <span class="kpi-sub" id="kpiStatusReason">Compliant with rules</span>
+            </div>
+        </section>
+
+        <!-- Main Chart & Trade Panel Grid -->
+        <section class="main-grid">
+            <!-- Left: TradingView Live Candlestick Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Live Market Chart (M15)</h2>
+                    <div class="pair-pills">
+                        <button class="pair-btn active" onclick="switchChart('OANDA:EURUSD')">EUR/USD</button>
+                        <button class="pair-btn" onclick="switchChart('OANDA:GBPUSD')">GBP/USD</button>
+                        <button class="pair-btn" onclick="switchChart('OANDA:XAUUSD')">XAU/USD (Gold)</button>
+                    </div>
+                </div>
+                <div class="chart-container" id="tv_chart_container"></div>
+            </div>
+
+            <!-- Right: Active Position & Setup Monitor -->
+            <div class="card">
+                <h2 class="card-title">Active Market Exposure</h2>
+                <div class="active-trade-box" id="activeTradeBox">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1.5rem 0;">
+                        No open positions.<br>Bot scanning London Killzone for Asian range liquidity sweeps.
+                    </p>
+                </div>
+
+                <h2 class="card-title" style="margin-top: 0.5rem;">Asian Range Tracker</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pair</th>
+                                <th>Asian Range</th>
+                                <th>Signal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="asianRangeTableBody">
+                            <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Scanning...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Streaming Activity Terminal Logs -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title">System Activity & SMC Audit Log</h2>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Auto-refreshes every 3s</span>
+            </div>
+            <div class="log-terminal" id="logTerminal"></div>
+        </section>
+    </div>
+
+    <footer>
+        Strategy 3 ICT / SMC Liquidity Sweep & Judas Swing Bot • OANDA v20 Engine • Port 5002
+    </footer>
+
+    <!-- TradingView Widget Script -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        let currentWidget = null;
+        let activeSymbol = "OANDA:EURUSD";
+
+        function initTradingView(symbol) {
+            document.getElementById('tv_chart_container').innerHTML = '';
+            currentWidget = new TradingView.widget({
+                "width": "100%",
+                "height": 480,
+                "symbol": symbol,
+                "interval": "15",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#0f172a",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "save_image": false,
+                "container_id": "tv_chart_container"
+            });
+        }
+
+        function switchChart(symbol) {
+            activeSymbol = symbol;
+            document.querySelectorAll('.pair-btn').forEach(btn => {
+                if (btn.innerText.replace('/', '') === symbol.split(':')[1]) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            initTradingView(symbol);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const utcString = now.toUTCString().split(' ')[4] + ' UTC';
+            document.getElementById('utcClock').innerText = utcString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // API Status Poll
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const risk = data.risk;
+                const bot = data.bot;
+
+                // KPI Updates
+                document.getElementById('kpiBalance').innerText = `$${risk.current_balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                
+                const netEl = document.getElementById('kpiNetPnl');
+                netEl.innerText = `${risk.net_pnl >= 0 ? '+' : ''}$${risk.net_pnl.toFixed(2)}`;
+                netEl.className = `kpi-value ${risk.net_pnl >= 0 ? 'text-green' : 'text-red'}`;
+
+                const todayEl = document.getElementById('kpiTodayPnl');
+                todayEl.innerText = `${risk.today_pnl >= 0 ? '+' : ''}$${risk.today_pnl.toFixed(2)}`;
+                todayEl.className = `kpi-value ${risk.today_pnl >= 0 ? 'text-green' : 'text-red'}`;
+
+                document.getElementById('kpiCircuitBreaker').innerText = `Circuit Breaker: ${risk.daily_loss_count}/2 Losses`;
+
+                const winRate = risk.total_trades > 0 ? ((risk.wins / risk.total_trades) * 100).toFixed(1) : "0.0";
+                document.getElementById('kpiWinRate').innerText = `${winRate}%`;
+                document.getElementById('kpiTradesDetail').innerText = `${risk.wins} Wins / ${risk.losses} Losses (${risk.total_trades} Total)`;
+
+                document.getElementById('kpiStatus').innerText = risk.challenge_status;
+                document.getElementById('kpiStatusReason').innerText = risk.status_reason || "Compliant with rules";
+
+                // Status Pill
+                document.getElementById('botStatusText').innerText = bot.status;
+
+                // Active Trade Box
+                const tradeBox = document.getElementById('activeTradeBox');
+                if (bot.active_trade) {
+                    const at = bot.active_trade;
+                    tradeBox.innerHTML = `
+                        <div class="trade-row"><span class="trade-label">Pair:</span><span class="trade-val text-blue">${at.instrument}</span></div>
+                        <div class="trade-row"><span class="trade-label">Position:</span><span class="trade-val ${at.units > 0 ? 'text-green' : 'text-red'}">${at.units > 0 ? 'LONG / BUY' : 'SHORT / SELL'} (${at.units} units)</span></div>
+                        <div class="trade-row"><span class="trade-label">Entry Price:</span><span class="trade-val">${at.price.toFixed(5)}</span></div>
+                        <div class="trade-row"><span class="trade-label">Stop Loss:</span><span class="trade-val text-red">${at.stop_loss ? at.stop_loss.toFixed(5) : 'Broker GTC'}</span></div>
+                        <div class="trade-row"><span class="trade-label">Take Profit:</span><span class="trade-val text-green">${at.take_profit ? at.take_profit.toFixed(5) : 'Broker GTC'}</span></div>
+                        <div class="trade-row"><span class="trade-label">Floating PnL:</span><span class="trade-val ${at.unrealized_pnl >= 0 ? 'text-green' : 'text-red'}">${at.unrealized_pnl >= 0 ? '+' : ''}$${at.unrealized_pnl.toFixed(2)}</span></div>
+                    `;
+                } else {
+                    tradeBox.innerHTML = `
+                        <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1.5rem 0;">
+                            No open positions.<br>Bot scanning London Killzone for Asian range liquidity sweeps.
+                        </p>
+                    `;
+                }
+
+                // Asian Range Table
+                const tbody = document.getElementById('asianRangeTableBody');
+                if (bot.recent_signals && Object.keys(bot.recent_signals).length > 0) {
+                    let rows = "";
+                    for (const [sym, sig] of Object.entries(bot.recent_signals)) {
+                        const sigBadge = sig.signal === "BUY" ? `<span class="text-green">BUY</span>` : (sig.signal === "SELL" ? `<span class="text-red">SELL</span>` : `<span style="color:var(--text-muted)">SCANNING</span>`);
+                        rows += `
+                            <tr>
+                                <td><b>${sym}</b></td>
+                                <td style="font-family:'JetBrains Mono', monospace; font-size:0.78rem;">${sig.asian_range || '--'}</td>
+                                <td>${sigBadge}</td>
+                            </tr>
+                        `;
+                    }
+                    tbody.innerHTML = rows;
+                }
+
+                // Streaming Logs
+                const logTerm = document.getElementById('logTerminal');
+                if (data.logs && data.logs.length > 0) {
+                    let logHtml = "";
+                    data.logs.forEach(l => {
+                        const lvlClass = l.level === "INFO" ? "log-info" : (l.level === "WARNING" ? "log-warn" : "log-err");
+                        logHtml += `<div class="log-line"><span class="log-time">[${l.time}]</span><span class="${lvlClass}">[${l.level}]</span> ${l.message}</div>`;
+                    });
+                    logTerm.innerHTML = logHtml;
+                    logTerm.scrollTop = logTerm.scrollHeight;
+                }
+
+            } catch (err) {
+                console.error("Status fetch error:", err);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initTradingView(activeSymbol);
+            fetchStatus();
+            setInterval(fetchStatus, 3000);
+        });
+    </script>
+</body>
+</html>
