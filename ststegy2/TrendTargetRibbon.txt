@@ -1,0 +1,776 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © BOSWaves
+
+//@version=6
+indicator("Trend Target Ribbon [BOSWaves]", overlay = true,
+     max_lines_count = 100, max_boxes_count = 100, max_labels_count = 100)
+ 
+// ┌────────────────────────────── BOSWaves ─ Inputs ─────────────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+const string g1 = "Trend"
+const string g2 = "Position"
+const string g3 = "Display"
+
+float src          = input.source(close, "Source", group = g1,
+     tooltip = "Price source used for the ALMA trend calculation.")
+int almaLen        = input.int(34, "ALMA Length", minval = 5, group = g1,
+     tooltip = "Number of bars used to calculate the ALMA moving average. Higher values produce a smoother, slower trend line.")
+float almaOffset   = input.float(0.85, "ALMA Offset", minval = 0.0, maxval = 1.0, step = 0.05, group = g1,
+     tooltip = "Controls the balance between responsiveness and smoothness. Higher values shift weighting toward recent price action.")
+float almaSigma    = input.float(6.0, "ALMA Sigma", minval = 1.0, maxval = 15.0, step = 0.5, group = g1,
+     tooltip = "Controls the smoothness of the ALMA curve. Higher values produce a smoother line with less noise.")
+int devLen         = input.int(34, "Deviation Length", minval = 5, group = g1,
+     tooltip = "Number of bars used to calculate the standard deviation bands around the ALMA for trend confirmation.")
+float devMult      = input.float(0.65, "Trend Confirmation", minval = 0.1, maxval = 3.0, step = 0.05, group = g1,
+     tooltip = "Multiplier applied to the deviation bands. Higher values require price to move further from the ALMA before confirming a trend.")
+int slopeLen       = input.int(3, "Slope Length", minval = 1, maxval = 10, group = g1,
+     tooltip = "Number of bars back used to measure the ALMA's slope for trend confirmation.")
+float slopeMin     = input.float(0.08, "Minimum Slope", minval = 0.0, maxval = 1.0, step = 0.01, group = g1,
+     tooltip = "Minimum slope strength, relative to ATR, required to confirm a trend direction.")
+int atrLen         = input.int(14, "ATR Length", minval = 5, group = g1,
+     tooltip = "Number of bars used to calculate the Average True Range, used for slope normalization and stop distance.")
+
+int stopLookback   = input.int(12, "Stop Structure Lookback", minval = 3, maxval = 50, group = g2,
+     tooltip = "Number of bars back used to locate swing structure for stop loss placement.")
+float minStopAtr   = input.float(0.75, "Minimum Stop ATR", minval = 0.25, maxval = 3.0, step = 0.05, group = g2,
+     tooltip = "Minimum stop distance allowed, expressed as a multiple of ATR.")
+float maxStopAtr   = input.float(3.0, "Maximum Stop ATR", minval = 1.0, maxval = 8.0, step = 0.25, group = g2,
+     tooltip = "Maximum stop distance allowed, expressed as a multiple of ATR.")
+int targetCount    = input.int(4, "Profit Targets", minval = 2, maxval = 4, group = g2,
+     tooltip = "Number of profit targets plotted for each position, from 2 to 4.")
+float zonePct      = input.float(0.06, "Target Zone Size", minval = 0.01, maxval = 0.20, step = 0.01, group = g2,
+     tooltip = "Size of the shaded zone drawn around each profit target, as a percentage of the risk distance.")
+float approachR    = input.float(0.65, "Target Approach Range", minval = 0.1, maxval = 1.5, step = 0.05, group = g2,
+     tooltip = "Distance, in risk multiples, within which a target begins visually highlighting as price approaches it.")
+int extendBars     = input.int(30, "Projection Length", minval = 10, maxval = 100, group = g2,
+     tooltip = "Number of bars the entry, stop, and target lines are projected forward from the current bar.")
+int keepPositions  = input.int(4, "Positions On Chart", minval = 1, maxval = 5, group = g2,
+     tooltip = "Number of past positions kept visible on the chart before the oldest is removed.")
+
+bool showRibbon    = input.bool(true, "Show Trend Gradient", group = g3,
+     tooltip = "Toggles visibility of the trend gradient ribbon.")
+bool showLabels    = input.bool(true, "Show Position Labels", group = g3,
+     tooltip = "Toggles visibility of position, stop, and target labels.")
+bool paintBars     = input.bool(true, "Color Candles", group = g3,
+     tooltip = "Toggles gradient coloring of candles based on trend conviction.")
+
+string labelInput  = input.string("Normal", "Label Size",
+     options = ["Tiny", "Small", "Normal", "Large", "Huge"],
+     group = g3,
+     tooltip = "Controls the size of position and target labels.")
+
+color buyCol       = input.color(#00FF00, "Bull", inline = "c1", group = g3,
+     tooltip = "Color used for bullish trend elements.")
+color sellCol      = input.color(#FF0066, "Bear", inline = "c1", group = g3,
+     tooltip = "Color used for bearish trend elements.")
+
+color tpCol        = input.color(#00FF00, "Take Profit", inline = "c2", group = g3,
+     tooltip = "Color used for take-profit target elements.")
+color slCol        = input.color(#FF0066, "Stop Loss", inline = "c2", group = g3,
+     tooltip = "Color used for stop-loss elements.")
+
+color whiteCol     = input.color(#FFFFFF, "Core", group = g3,
+     tooltip = "Color used for the core ALMA line and entry markers.")
+color neutralCol   = input.color(#555555, "Neutral", group = g3,
+     tooltip = "Color used when no trend is active.")
+
+f_label_size(string value) =>
+    value == "Tiny" ? size.tiny :
+     value == "Small" ? size.small :
+     value == "Large" ? size.large :
+     value == "Huge" ? size.huge :
+     size.normal
+
+string labelSize = f_label_size(labelInput)
+
+// ┌────────────────────────────── BOSWaves ─ Trend ──────────────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+float alma = ta.alma(src, almaLen, almaOffset, almaSigma)
+float dev  = ta.stdev(src, devLen)
+float atr  = ta.atr(atrLen)
+
+float slopeScore = atr > 0 ? (alma - alma[slopeLen]) / atr : 0.0
+
+float upperConfirm = alma + dev * devMult
+float lowerConfirm = alma - dev * devMult
+
+bool bullSetup = slopeScore > slopeMin and close > upperConfirm
+bool bearSetup = slopeScore < -slopeMin and close < lowerConfirm
+
+var int trend = 0
+
+bool bullFlip = false
+bool bearFlip = false
+
+if trend != 1 and bullSetup
+    trend := 1
+    bullFlip := true
+else if trend != -1 and bearSetup
+    trend := -1
+    bearFlip := true
+
+bool bull = trend == 1
+bool bear = trend == -1
+bool flip = bullFlip or bearFlip
+
+color trendCol = bull ? buyCol : bear ? sellCol : neutralCol
+
+// ┌────────────────────────────── BOSWaves ─ Gradient ───────────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+float distanceScore = atr > 0 ? math.abs(close - alma) / atr : 0.0
+
+float conviction = math.max(0.0, math.min(1.0,
+     math.abs(slopeScore) * 2.0 + distanceScore * 0.35))
+
+float ribbonEdge = bull ?
+     alma - dev * 0.55 :
+     bear ? alma + dev * 0.55 :
+     alma
+
+float ribbonMid = (alma + ribbonEdge) * 0.5
+
+float almaDraw = flip ? na : alma
+float midDraw  = flip ? na : ribbonMid
+float edgeDraw = flip ? na : ribbonEdge
+
+int edgeT = int(math.round(82.0 - conviction * 16.0))
+int coreT = int(math.round(50.0 - conviction * 35.0))
+
+pEdgeGlow = plot(showRibbon ? edgeDraw : na, "Trend Glow",
+     color = color.new(trendCol, 86),
+     linewidth = 9,
+     style = plot.style_linebr)
+
+pEdge = plot(showRibbon ? edgeDraw : na, "Trend Edge",
+     color = color.new(trendCol, edgeT),
+     linewidth = 3,
+     style = plot.style_linebr)
+
+pMid = plot(showRibbon ? midDraw : na, "Trend Mid",
+     color = color.new(trendCol, 100),
+     linewidth = 1,
+     style = plot.style_linebr)
+
+pAlma = plot(showRibbon ? almaDraw : na, "ALMA",
+     color = color.new(whiteCol, coreT),
+     linewidth = 1,
+     style = plot.style_linebr)
+
+fill(pEdge, pMid,
+     color = showRibbon ? color.new(trendCol, 84) : na)
+
+fill(pMid, pAlma,
+     color = showRibbon ? color.new(trendCol, 93) : na)
+
+// ┌────────────────────────────── BOSWaves ─ Candles ────────────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+color weakCol = color.new(trendCol, 72)
+
+color barCol = color.from_gradient(
+     conviction,
+     0.0,
+     1.0,
+     weakCol,
+     trendCol)
+
+barcolor(paintBars and trend != 0 ? barCol : na)
+
+// ┌────────────────────────────── BOSWaves ─ Position State ─────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+var float entryPrice = na
+var float stopPrice  = na
+var float riskDist   = na
+
+var int entryBar     = na
+var int positionDir  = 0
+
+var bool positionEnded = true
+
+var line entryGlow = na
+var line entryCore = na
+var line stopGlow  = na
+var line stopCore  = na
+
+var box riskBox = na
+
+var label entryTag = na
+var label stopTag  = na
+
+var line[] targetGlow  = array.new<line>()
+var line[] targetCore  = array.new<line>()
+var box[] targetZone   = array.new<box>()
+var box[] targetBand   = array.new<box>()
+var label[] targetTags = array.new<label>()
+
+var bool[] targetHit = array.new<bool>(4, false)
+
+var line[] allPositionLines   = array.new<line>()
+var box[] allPositionBoxes    = array.new<box>()
+var label[] allPositionLabels = array.new<label>()
+
+var int positionCount = 0
+
+// ┌────────────────────────────── BOSWaves ─ Freeze Position ────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+if flip and not na(entryPrice) and not positionEnded
+    int endBar = bar_index
+    color oldCol = positionDir == 1 ? buyCol : sellCol
+
+    line.set_xy2(entryGlow, endBar, entryPrice)
+    line.set_xy2(entryCore, endBar, entryPrice)
+    line.set_xy2(stopGlow, endBar, stopPrice)
+    line.set_xy2(stopCore, endBar, stopPrice)
+
+    line.set_color(entryGlow, color.new(oldCol, 88))
+    line.set_color(entryCore, color.new(whiteCol, 50))
+
+    line.set_color(stopGlow, color.new(slCol, 88))
+    line.set_color(stopCore, color.new(slCol, 48))
+
+    box.set_right(riskBox, endBar)
+    box.set_bgcolor(riskBox, color.new(slCol, 97))
+
+    if showLabels
+        label.set_xy(entryTag, endBar + 1, entryPrice)
+        label.set_color(entryTag, color.new(oldCol, 58))
+
+        label.set_xy(stopTag, endBar + 1, stopPrice)
+        label.set_color(stopTag, color.new(slCol, 65))
+
+    for i = 0 to targetGlow.size() - 1
+        float targetPrice = entryPrice + positionDir * riskDist * (i + 1)
+
+        line glow = targetGlow.get(i)
+        line core = targetCore.get(i)
+        box zone = targetZone.get(i)
+        box band = targetBand.get(i)
+        label tag = targetTags.get(i)
+
+        bool hit = targetHit.get(i)
+
+        line.set_xy2(glow, endBar, targetPrice)
+        line.set_xy2(core, endBar, targetPrice)
+
+        line.set_color(glow,
+             color.new(tpCol, hit ? 80 : 94))
+
+        line.set_color(core,
+             hit ?
+             color.new(whiteCol, 38) :
+             color.new(tpCol, 72))
+
+        box.set_right(zone, endBar)
+        box.set_right(band, endBar)
+
+        box.set_bgcolor(zone,
+             color.new(tpCol, hit ? 93 : 98))
+
+        box.set_bgcolor(band,
+             color.new(tpCol, hit ? 95 : 99))
+
+        if showLabels
+            label.set_xy(tag, endBar + 1, targetPrice)
+
+            label.set_color(tag,
+                 color.new(tpCol, hit ? 52 : 76))
+
+    positionEnded := true
+
+// ┌────────────────────────────── BOSWaves ─ New Position ───────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+if flip
+    int linesPerPosition  = 4 + targetCount * 2
+    int boxesPerPosition  = 1 + targetCount * 2
+    int labelsPerPosition = 2 + targetCount
+
+    if positionCount >= keepPositions
+        for i = 0 to linesPerPosition - 1
+            line oldLine = array.shift(allPositionLines)
+            line.delete(oldLine)
+
+        for i = 0 to boxesPerPosition - 1
+            box oldBox = array.shift(allPositionBoxes)
+            box.delete(oldBox)
+
+        for i = 0 to labelsPerPosition - 1
+            label oldLabel = array.shift(allPositionLabels)
+            label.delete(oldLabel)
+
+        positionCount -= 1
+
+    targetGlow.clear()
+    targetCore.clear()
+    targetZone.clear()
+    targetBand.clear()
+    targetTags.clear()
+
+    for i = 0 to 3
+        targetHit.set(i, false)
+
+    entryPrice := close
+    entryBar := bar_index
+    positionDir := bull ? 1 : -1
+    positionEnded := false
+
+    float structureStop = positionDir == 1 ?
+         ta.lowest(low, stopLookback)[1] :
+         ta.highest(high, stopLookback)[1]
+
+    float rawRisk = positionDir == 1 ?
+         entryPrice - structureStop :
+         structureStop - entryPrice
+
+    float minimumRisk = atr * minStopAtr
+    float maximumRisk = atr * maxStopAtr
+
+    riskDist := math.min(
+         math.max(nz(rawRisk, minimumRisk), minimumRisk),
+         maximumRisk)
+
+    stopPrice := entryPrice - positionDir * riskDist
+
+    color activeCol = positionDir == 1 ? buyCol : sellCol
+
+    entryGlow := line.new(
+         entryBar,
+         entryPrice,
+         bar_index + extendBars,
+         entryPrice,
+         xloc = xloc.bar_index,
+         color = color.new(activeCol, 76),
+         width = 8)
+
+    allPositionLines.push(entryGlow)
+
+    entryCore := line.new(
+         entryBar,
+         entryPrice,
+         bar_index + extendBars,
+         entryPrice,
+         xloc = xloc.bar_index,
+         color = color.new(whiteCol, 10),
+         width = 1)
+
+    allPositionLines.push(entryCore)
+
+    stopGlow := line.new(
+         entryBar,
+         stopPrice,
+         bar_index + extendBars,
+         stopPrice,
+         xloc = xloc.bar_index,
+         color = color.new(slCol, 74),
+         width = 8)
+
+    allPositionLines.push(stopGlow)
+
+    stopCore := line.new(
+         entryBar,
+         stopPrice,
+         bar_index + extendBars,
+         stopPrice,
+         xloc = xloc.bar_index,
+         color = color.new(slCol, 2),
+         width = 2)
+
+    allPositionLines.push(stopCore)
+
+    riskBox := box.new(
+         left = entryBar,
+         top = math.max(entryPrice, stopPrice),
+         right = bar_index + extendBars,
+         bottom = math.min(entryPrice, stopPrice),
+         xloc = xloc.bar_index,
+         bgcolor = color.new(slCol, 94),
+         border_color = color.new(slCol, 100))
+
+    allPositionBoxes.push(riskBox)
+
+    entryTag := label.new(
+         bar_index + extendBars,
+         entryPrice,
+         positionDir == 1 ? "LONG" : "SHORT",
+         style = label.style_label_left,
+         color = showLabels ?
+         color.new(activeCol, 16) :
+         color.new(activeCol, 100),
+         textcolor = showLabels ?
+         whiteCol :
+         color.new(whiteCol, 100),
+         size = labelSize)
+
+    allPositionLabels.push(entryTag)
+
+    stopTag := label.new(
+         bar_index + extendBars,
+         stopPrice,
+         "SL  -1R",
+         style = label.style_label_left,
+         color = showLabels ?
+         color.new(slCol, 22) :
+         color.new(slCol, 100),
+         textcolor = showLabels ?
+         whiteCol :
+         color.new(whiteCol, 100),
+         size = labelSize)
+
+    allPositionLabels.push(stopTag)
+
+    float previousLevel = entryPrice
+
+    for i = 0 to targetCount - 1
+        float targetPrice = entryPrice + positionDir * riskDist * (i + 1)
+        float zoneHalf = riskDist * zonePct
+
+        line glow = line.new(
+             entryBar,
+             targetPrice,
+             bar_index + extendBars,
+             targetPrice,
+             xloc = xloc.bar_index,
+             color = color.new(tpCol, 94),
+             width = 8)
+
+        line core = line.new(
+             entryBar,
+             targetPrice,
+             bar_index + extendBars,
+             targetPrice,
+             xloc = xloc.bar_index,
+             color = color.new(tpCol, 82),
+             width = 1)
+
+        box zone = box.new(
+             left = entryBar,
+             top = targetPrice + zoneHalf,
+             right = bar_index + extendBars,
+             bottom = targetPrice - zoneHalf,
+             xloc = xloc.bar_index,
+             bgcolor = color.new(tpCol, 97),
+             border_color = color.new(tpCol, 92))
+
+        box band = box.new(
+             left = entryBar,
+             top = math.max(previousLevel, targetPrice),
+             right = bar_index + extendBars,
+             bottom = math.min(previousLevel, targetPrice),
+             xloc = xloc.bar_index,
+             bgcolor = color.new(tpCol, 97 - i),
+             border_color = color.new(tpCol, 100))
+
+        label tag = label.new(
+             bar_index + extendBars,
+             targetPrice,
+             "T" + str.tostring(i + 1) +
+             "  " + str.tostring(i + 1) + "R",
+             style = label.style_label_left,
+             color = showLabels ?
+             color.new(tpCol, 80) :
+             color.new(tpCol, 100),
+             textcolor = showLabels ?
+             whiteCol :
+             color.new(whiteCol, 100),
+             size = labelSize)
+
+        targetGlow.push(glow)
+        targetCore.push(core)
+        targetZone.push(zone)
+        targetBand.push(band)
+        targetTags.push(tag)
+
+        allPositionLines.push(glow)
+        allPositionLines.push(core)
+
+        allPositionBoxes.push(zone)
+        allPositionBoxes.push(band)
+
+        allPositionLabels.push(tag)
+
+        previousLevel := targetPrice
+
+    positionCount += 1
+
+// ┌────────────────────────────── BOSWaves ─ Active Position ────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+if not na(entryPrice) and not positionEnded and targetGlow.size() > 0
+    color activeCol = positionDir == 1 ? buyCol : sellCol
+
+    bool stoppedNow = bar_index > entryBar and (
+         positionDir == 1 ?
+         low <= stopPrice :
+         high >= stopPrice)
+
+    if stoppedNow
+        int endBar = bar_index
+
+        line.set_xy2(entryGlow, endBar, entryPrice)
+        line.set_xy2(entryCore, endBar, entryPrice)
+
+        line.set_xy2(stopGlow, endBar, stopPrice)
+        line.set_xy2(stopCore, endBar, stopPrice)
+
+        line.set_color(entryGlow,
+             color.new(activeCol, 88))
+
+        line.set_color(entryCore,
+             color.new(whiteCol, 50))
+
+        line.set_color(stopGlow,
+             color.new(slCol, 48))
+
+        line.set_color(stopCore,
+             color.new(whiteCol, 5))
+
+        box.set_right(riskBox, endBar)
+
+        box.set_bgcolor(riskBox,
+             color.new(slCol, 87))
+
+        if showLabels
+            label.set_xy(entryTag, endBar + 1, entryPrice)
+
+            label.set_color(entryTag,
+                 color.new(activeCol, 58))
+
+            label.set_xy(stopTag, endBar + 1, stopPrice)
+
+            label.set_text(stopTag,
+                 "SL  -1R  ✓")
+
+            label.set_color(stopTag,
+                 color.new(slCol, 12))
+
+        for i = 0 to targetGlow.size() - 1
+            float targetPrice = entryPrice + positionDir * riskDist * (i + 1)
+
+            line glow = targetGlow.get(i)
+            line core = targetCore.get(i)
+            box zone = targetZone.get(i)
+            box band = targetBand.get(i)
+            label tag = targetTags.get(i)
+
+            bool hit = targetHit.get(i)
+
+            line.set_xy2(glow, endBar, targetPrice)
+            line.set_xy2(core, endBar, targetPrice)
+
+            line.set_color(glow,
+                 color.new(tpCol, hit ? 80 : 95))
+
+            line.set_color(core,
+                 hit ?
+                 color.new(whiteCol, 38) :
+                 color.new(tpCol, 82))
+
+            box.set_right(zone, endBar)
+            box.set_right(band, endBar)
+
+            box.set_bgcolor(zone,
+                 color.new(tpCol, hit ? 93 : 99))
+
+            box.set_bgcolor(band,
+                 color.new(tpCol, hit ? 95 : 99))
+
+            if showLabels
+                label.set_xy(tag, endBar + 1, targetPrice)
+
+                label.set_color(tag,
+                     color.new(tpCol, hit ? 52 : 82))
+
+        positionEnded := true
+
+    else
+        line.set_xy2(
+             entryGlow,
+             bar_index + extendBars,
+             entryPrice)
+
+        line.set_xy2(
+             entryCore,
+             bar_index + extendBars,
+             entryPrice)
+
+        line.set_xy2(
+             stopGlow,
+             bar_index + extendBars,
+             stopPrice)
+
+        line.set_xy2(
+             stopCore,
+             bar_index + extendBars,
+             stopPrice)
+
+        box.set_right(
+             riskBox,
+             bar_index + extendBars)
+
+        if showLabels
+            label.set_xy(
+                 entryTag,
+                 bar_index + extendBars,
+                 entryPrice)
+
+            label.set_xy(
+                 stopTag,
+                 bar_index + extendBars,
+                 stopPrice)
+
+        float previousLevel = entryPrice
+
+        for i = 0 to targetGlow.size() - 1
+            float targetPrice = entryPrice + positionDir * riskDist * (i + 1)
+            float zoneHalf = riskDist * zonePct
+
+            bool hit = targetHit.get(i)
+
+            hit := hit or (
+                 positionDir == 1 ?
+                 high >= targetPrice :
+                 low <= targetPrice)
+
+            targetHit.set(i, hit)
+
+            float distance = math.abs(close - targetPrice)
+
+            float radius = math.max(
+                 riskDist * approachR,
+                 syminfo.mintick)
+
+            float proximity = math.max(
+                 0.0,
+                 math.min(
+                 1.0,
+                 1.0 - distance / radius))
+
+            int glowT = hit ?
+                 60 :
+                 int(math.round(
+                 95.0 - proximity * 30.0))
+
+            int targetCoreT = hit ?
+                 4 :
+                 int(math.round(
+                 88.0 - proximity * 72.0))
+
+            int zoneT = hit ?
+                 84 :
+                 int(math.round(
+                 98.0 - proximity * 10.0))
+
+            int bandT = hit ?
+                 math.max(85, 90 - i * 2) :
+                 int(math.round(
+                 97.0 - proximity * 5.0))
+
+            line glow = targetGlow.get(i)
+            line core = targetCore.get(i)
+            box zone = targetZone.get(i)
+            box band = targetBand.get(i)
+            label tag = targetTags.get(i)
+
+            line.set_xy2(
+                 glow,
+                 bar_index + extendBars,
+                 targetPrice)
+
+            line.set_xy2(
+                 core,
+                 bar_index + extendBars,
+                 targetPrice)
+
+            line.set_color(
+                 glow,
+                 color.new(tpCol, glowT))
+
+            line.set_color(
+                 core,
+                 hit ?
+                 color.new(whiteCol, targetCoreT) :
+                 color.new(tpCol, targetCoreT))
+
+            box.set_right(
+                 zone,
+                 bar_index + extendBars)
+
+            box.set_top(
+                 zone,
+                 targetPrice + zoneHalf)
+
+            box.set_bottom(
+                 zone,
+                 targetPrice - zoneHalf)
+
+            box.set_bgcolor(
+                 zone,
+                 color.new(tpCol, zoneT))
+
+            box.set_border_color(
+                 zone,
+                 color.new(
+                 tpCol,
+                 math.max(25, zoneT - 12)))
+
+            box.set_right(
+                 band,
+                 bar_index + extendBars)
+
+            box.set_top(
+                 band,
+                 math.max(previousLevel, targetPrice))
+
+            box.set_bottom(
+                 band,
+                 math.min(previousLevel, targetPrice))
+
+            box.set_bgcolor(
+                 band,
+                 color.new(tpCol, bandT))
+
+            if showLabels
+                label.set_xy(
+                     tag,
+                     bar_index + extendBars,
+                     targetPrice)
+
+                label.set_text(
+                     tag,
+                     "T" + str.tostring(i + 1) +
+                     "  " + str.tostring(i + 1) + "R" +
+                     (hit ? "  ✓" : ""))
+
+                label.set_color(
+                     tag,
+                     color.new(
+                     tpCol,
+                     hit ? 14 :
+                     math.max(38, targetCoreT)))
+
+            previousLevel := targetPrice
+
+// ┌────────────────────────────── BOSWaves ─ Signals ────────────────────────────────┐
+// └──────────────────────────────────────────────────────────────────────────────────┘
+plotshape(
+     bullFlip,
+     title = "Bull Trend",
+     location = location.belowbar,
+     style = shape.diamond,
+     size = size.small,
+     color = buyCol)
+
+plotshape(
+     bearFlip,
+     title = "Bear Trend",
+     location = location.abovebar,
+     style = shape.diamond,
+     size = size.small,
+     color = sellCol)
+
+alertcondition(
+     bullFlip,
+     "Bull Trend",
+     "Bull trend position started")
+
+alertcondition(
+     bearFlip,
+     "Bear Trend",
+     "Bear trend position started")
