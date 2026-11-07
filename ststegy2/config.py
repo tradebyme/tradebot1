@@ -71,8 +71,8 @@ class Config:
     MAX_STOP_ATR = float(os.getenv("MAX_STOP_ATR", "2.5"))
 
     # Instruments & Timeframe
-    INSTRUMENTS = [i.strip() for i in os.getenv("INSTRUMENTS", "GBP_USD,EUR_USD").split(",") if i.strip()]
-    TIMEFRAME = os.getenv("TIMEFRAME", "M15")
+    INSTRUMENTS = [i.strip() for i in os.getenv("INSTRUMENTS", "XAU_USD,EUR_USD,USD_JPY").split(",") if i.strip()]
+    TIMEFRAME = os.getenv("TIMEFRAME", "H1")
     MAX_CONCURRENT_TRADES = int(os.getenv("MAX_CONCURRENT_TRADES", "1"))
     MAX_TRADES_PER_DAY = int(os.getenv("MAX_TRADES_PER_DAY", "3"))
     MAX_SPREAD_PIPS = float(os.getenv("MAX_SPREAD_PIPS", "6.0"))
@@ -89,3 +89,4 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "strategy2-oanda-key-2026")
     DASHBOARD_USERNAME = os.getenv("DASHBOARD_USERNAME", "admin")
     DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "oandabot2026")
+

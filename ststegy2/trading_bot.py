@@ -291,3 +291,4 @@ class TradingBot:
             "logs": logs,
             "bot_running": self.is_running
         }
+

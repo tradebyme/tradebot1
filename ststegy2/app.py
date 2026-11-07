@@ -146,3 +146,4 @@ def reset_challenge():
 if __name__ == "__main__":
     logger.info(f"Starting Strategy 2 Trading Dashboard on {Config.HOST}:{Config.PORT}...")
     app.run(host=Config.HOST, port=Config.PORT, debug=False)
+

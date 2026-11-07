@@ -200,7 +200,10 @@ class ConfluenceTrendStrategy:
         high = df["high"]
         low = df["low"]
 
-        # 1. Trend Target Ribbon Calculations
+        # 1. 200 EMA Higher Trend Filter
+        ema200 = close.ewm(span=200, adjust=False).mean()
+
+        # 2. Trend Target Ribbon Calculations
         alma = self.calculate_alma(close, Config.ALMA_LENGTH, Config.ALMA_OFFSET, Config.ALMA_SIGMA)
         dev = close.rolling(window=Config.DEV_LENGTH).std()
         atr = self.calculate_atr(high, low, close, Config.ATR_LENGTH)
@@ -212,7 +215,7 @@ class ConfluenceTrendStrategy:
         bull_ribbon = (slope_score > Config.SLOPE_MIN) & (close > upper_confirm)
         bear_ribbon = (slope_score < -Config.SLOPE_MIN) & (close < lower_confirm)
 
-        # 2. Adaptive SuperSmoother Calculations
+        # 3. Adaptive SuperSmoother Calculations
         _, slope, threshold = self.calculate_adaptive_supersmoother(
             close, Config.MA_MIN, Config.MA_MAX, Config.VOL_LENGTH,
             Config.SMOOTH_LENGTH, Config.ER_LENGTH, Config.FAST_BIAS,
@@ -228,18 +231,30 @@ class ConfluenceTrendStrategy:
 
         curr_close = close.iloc[curr_idx]
         curr_atr = atr.iloc[curr_idx]
+        curr_ema200 = ema200.iloc[curr_idx]
 
-        # Check for Trend Flip / Breakout Entry
+        # Check for Trend Flip / Breakout Entry with 200 EMA Alignment
         is_bull_confluence = (bull_ribbon.iloc[curr_idx] and
                               super_smoother_bull.iloc[curr_idx] and
-                              not bull_ribbon.iloc[prev_idx])
+                              not bull_ribbon.iloc[prev_idx] and
+                              curr_close > curr_ema200)
 
         is_bear_confluence = (bear_ribbon.iloc[curr_idx] and
                               super_smoother_bear.iloc[curr_idx] and
-                              not bear_ribbon.iloc[prev_idx])
+                              not bear_ribbon.iloc[prev_idx] and
+                              curr_close < curr_ema200)
 
-        # Pip scale: 0.0001 for XXX/USD pairs, 0.01 for JPY
-        pip_unit = 0.0001
+        # Dynamic pip scale: 0.10 for Gold, 0.01 for JPY pairs, 0.0001 for standard Forex
+        sym_upper = self.symbol.upper()
+        if "XAU" in sym_upper or "GOLD" in sym_upper:
+            pip_unit = 0.10
+            decimals = 2
+        elif "JPY" in sym_upper:
+            pip_unit = 0.01
+            decimals = 3
+        else:
+            pip_unit = 0.0001
+            decimals = 5
 
         # =====================================================================
         # BULLISH ENTRY
@@ -254,20 +269,20 @@ class ConfluenceTrendStrategy:
             max_risk = curr_atr * Config.MAX_STOP_ATR
             risk_dist = np.clip(raw_risk if not np.isnan(raw_risk) else min_risk, min_risk, max_risk)
 
-            stop_loss = round(curr_close - risk_dist, 5)
-            take_profit = round(curr_close + (Config.RISK_REWARD_RATIO * risk_dist), 5)
+            stop_loss = round(curr_close - risk_dist, decimals)
+            take_profit = round(curr_close + (Config.RISK_REWARD_RATIO * risk_dist), decimals)
 
             risk_pips = round(risk_dist / pip_unit, 1)
             reward_pips = round((Config.RISK_REWARD_RATIO * risk_dist) / pip_unit, 1)
 
             result.update({
                 "signal": "BUY",
-                "entry_price": curr_close,
+                "entry_price": round(curr_close, decimals),
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
                 "risk_pips": risk_pips,
                 "reward_pips": reward_pips,
-                "reason": f"Bullish Confluence: ALMA break ({curr_close:.5f} > {upper_confirm.iloc[curr_idx]:.5f}) + SuperSmoother trending."
+                "reason": f"Bullish Confluence: ALMA break ({curr_close:.{decimals}f} > {upper_confirm.iloc[curr_idx]:.{decimals}f}) + SuperSmoother trending + Above 200 EMA."
             })
             return result
 
@@ -284,22 +299,23 @@ class ConfluenceTrendStrategy:
             max_risk = curr_atr * Config.MAX_STOP_ATR
             risk_dist = np.clip(raw_risk if not np.isnan(raw_risk) else min_risk, min_risk, max_risk)
 
-            stop_loss = round(curr_close + risk_dist, 5)
-            take_profit = round(curr_close - (Config.RISK_REWARD_RATIO * risk_dist), 5)
+            stop_loss = round(curr_close + risk_dist, decimals)
+            take_profit = round(curr_close - (Config.RISK_REWARD_RATIO * risk_dist), decimals)
 
             risk_pips = round(risk_dist / pip_unit, 1)
             reward_pips = round((Config.RISK_REWARD_RATIO * risk_dist) / pip_unit, 1)
 
             result.update({
                 "signal": "SELL",
-                "entry_price": curr_close,
+                "entry_price": round(curr_close, decimals),
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
                 "risk_pips": risk_pips,
                 "reward_pips": reward_pips,
-                "reason": f"Bearish Confluence: ALMA break ({curr_close:.5f} < {lower_confirm.iloc[curr_idx]:.5f}) + SuperSmoother trending down."
+                "reason": f"Bearish Confluence: ALMA break ({curr_close:.{decimals}f} < {lower_confirm.iloc[curr_idx]:.{decimals}f}) + SuperSmoother trending down + Below 200 EMA."
             })
             return result
 
         result["reason"] = f"Market in consolidation or continuation (ALMA slope: {slope_score[curr_idx]:.3f}, SS slope: {slope.iloc[curr_idx]:.5f})."
         return result
+

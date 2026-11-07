@@ -280,3 +280,4 @@ class RiskManager:
             "current_day_utc": self.state.get("current_day_utc", ""),
             "equity_history": self.state.get("equity_history", [])[-50:]
         }
+

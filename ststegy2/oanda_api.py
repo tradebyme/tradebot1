@@ -123,3 +123,4 @@ class OandaClient:
     def close_trade(self, trade_id: str) -> Dict[str, Any]:
         """Close an active position immediately."""
         return self._request("PUT", f"/accounts/{self.account_id}/trades/{trade_id}/close")
+

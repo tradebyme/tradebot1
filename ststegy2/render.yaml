@@ -8,3 +8,4 @@ services:
     plan: free
     autoDeploy: true
     healthCheckPath: /health
+
