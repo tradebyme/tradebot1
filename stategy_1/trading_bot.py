@@ -11,22 +11,22 @@ from strategy import MomentumPullbackStrategy
 logger = logging.getLogger("TradingBot")
 
 def is_strat1_trade(trade: Dict[str, Any]) -> bool:
-    """Strictly isolate Strategy 1 trades from APEX SNIPER and other foreign bots."""
+    """Isolate Strategy 1 trades (GBP_USD & EUR_USD M15), excluding APEX SNIPER."""
     ce = trade.get("clientExtensions") or {}
     tag = str(ce.get("tag", "")).upper()
     comment = str(ce.get("comment", "")).upper()
     ext_id = str(ce.get("id", "")).upper()
 
-    # Reject foreign bots from arena or apex sniper
-    foreign_keywords = ["APEX", "TITAN", "PHANTOM", "NEXUS", "PREDATOR", "AGENT_"]
-    if any(k in tag or k in comment or k in ext_id for k in foreign_keywords):
+    # Exclude APEX SNIPER trades
+    if any(k in tag or k in comment or k in ext_id for k in ["APEX_SNIPER", "AGENT_APEX_SNIPER"]):
         return False
 
     inst = trade.get("instrument", "")
-    if inst not in Config.INSTRUMENTS:  # Strategy 1 only trades GBP_USD and EUR_USD
-        return False
+    # Strategy 1 trades GBP_USD and EUR_USD
+    if inst in ("GBP_USD", "EUR_USD"):
+        return True
 
-    return True
+    return False
 
 class TradingBot:
     """Core Trading Bot Engine coordinating Market Data, Strategy, and Risk Management."""
@@ -74,8 +74,11 @@ class TradingBot:
             challenge_start = getattr(Config, "CHALLENGE_START_DATE", "2026-11-05")
             today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-            # Check if RiskManager needs historical synchronization (e.g. fresh Render container)
-            needs_sync = (self.risk_manager.state.get("total_trades_count", 0) == 0)
+            # Check if RiskManager needs historical synchronization (e.g. fresh Render container or updated config)
+            saved_count = self.risk_manager.state.get("total_trades_count", 0)
+            saved_capital = float(self.risk_manager.state.get("virtual_capital", 0.0))
+            target_capital = float(getattr(Config, "VIRTUAL_CAPITAL", 5000.0))
+            needs_sync = (saved_count != len(closed)) or (saved_capital != target_capital)
 
             if needs_sync and closed:
                 self.log("INFO", f"Synchronizing challenge trades from OANDA broker history (since {challenge_start})...")
@@ -86,7 +89,7 @@ class TradingBot:
                 daily_pl = 0.0
                 daily_trades = 0
                 daily_losses = 0
-                running_equity = self.risk_manager.virtual_capital
+                running_equity = target_capital
                 equity_history = [
                     {"time": f"{challenge_start}T00:00:00+00:00", "equity": running_equity}
                 ]
@@ -116,7 +119,9 @@ class TradingBot:
                             if pl < 0:
                                 daily_losses += 1
 
+                self.risk_manager.state["virtual_capital"] = target_capital
                 self.risk_manager.state["challenge_start_date"] = challenge_start
+                self.risk_manager.state["starting_balance_today"] = round(running_equity - daily_pl, 4)
                 self.risk_manager.state["total_realized_pl"] = round(total_pl, 4)
                 self.risk_manager.state["total_trades_count"] = total_trades
                 self.risk_manager.state["total_wins"] = total_wins

@@ -18,7 +18,7 @@ services:
       - key: OANDA_ENV
         value: practice
       - key: VIRTUAL_CAPITAL
-        value: "2000.0"
+        value: "5000.0"
       - key: TARGET_PROFIT_PCT
         value: "8.0"
       - key: MAX_DRAWDOWN_PCT

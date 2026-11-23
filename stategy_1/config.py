@@ -38,20 +38,20 @@ class Config:
         BASE_URL = "https://api-fxpractice.oanda.com/v3"
         STREAM_URL = "https://stream-fxpractice.oanda.com/v3"
 
-    # Prop Challenge & Capital Rules (User Target: 8% gain in 3 days, 5% daily loss limit, 8% max loss)
+    # Prop Challenge & Capital Rules ($5,000 Initial Prop Firm Funding)
     CHALLENGE_START_DATE = os.getenv("CHALLENGE_START_DATE", "2026-11-05").strip()
-    VIRTUAL_CAPITAL = float(os.getenv("VIRTUAL_CAPITAL", "2000.0"))
-    TARGET_PROFIT_PCT = float(os.getenv("TARGET_PROFIT_PCT", "8.0"))       # 8% target ($160 on $2,000)
-    MAX_DRAWDOWN_PCT = float(os.getenv("MAX_DRAWDOWN_PCT", "8.0"))         # 8% max total loss ($160 on $2,000)
-    MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))     # 5% max daily loss ($100 on $2,000)
+    VIRTUAL_CAPITAL = float(os.getenv("VIRTUAL_CAPITAL", "5000.0"))
+    TARGET_PROFIT_PCT = float(os.getenv("TARGET_PROFIT_PCT", "8.0"))       # 8% target ($400 on $5,000)
+    MAX_DRAWDOWN_PCT = float(os.getenv("MAX_DRAWDOWN_PCT", "8.0"))         # 8% max total loss ($400 on $5,000)
+    MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))     # 5% max daily loss ($250 on $5,000)
     
     # Proactive Circuit Breakers
-    DAILY_CIRCUIT_BREAKER_PCT = float(os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.5")) # $70 on $2,000
-    MAX_DAILY_LOSSES = int(os.getenv("MAX_DAILY_LOSSES", "2")) # Halts trading if 2 losses occur in 1 day (0% drawdown failure in 2-yr backtest)
+    DAILY_CIRCUIT_BREAKER_PCT = float(os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.0")) # $150 on $5,000 (3.0% daily circuit breaker)
+    MAX_DAILY_LOSSES = int(os.getenv("MAX_DAILY_LOSSES", "2")) # Halts trading if 2 losses occur in 1 day
 
     # Risk Management Per Trade
-    # 1.25% risk per trade ($25 on $2,000)
-    RISK_PER_TRADE_PCT = float(os.getenv("RISK_PER_TRADE_PCT", "1.25"))
+    # 1.0% risk per trade ($50 on $5,000)
+    RISK_PER_TRADE_PCT = float(os.getenv("RISK_PER_TRADE_PCT", "1.0"))
     # 1:2 Risk to Reward (Risk $25 to make $50)
     RISK_REWARD_RATIO = float(os.getenv("RISK_REWARD_RATIO", "2.0"))
 

@@ -21,7 +21,7 @@ class ApexRiskManager:
         else:
             self.state_file = Path(state_file_path)
 
-        self.virtual_capital = float(os.getenv("VIRTUAL_CAPITAL", "2000.0"))
+        self.virtual_capital = float(os.getenv("VIRTUAL_CAPITAL", "5000.0"))
         self.target_profit_usd = self.virtual_capital * (float(os.getenv("TARGET_PROFIT_PCT", "8.0")) / 100.0)
         self.target_profit_p2_usd = self.virtual_capital * (float(os.getenv("TARGET_PROFIT_P2_PCT", "5.0")) / 100.0)
         self.max_drawdown_usd = self.virtual_capital * (float(os.getenv("MAX_DRAWDOWN_PCT", "8.0")) / 100.0)

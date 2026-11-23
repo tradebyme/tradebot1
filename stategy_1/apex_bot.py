@@ -89,19 +89,17 @@ class ApexTradingBot:
     def _seed_closed_trades(self):
         """Record existing closed trades and sync realized P&L from OANDA on startup."""
         try:
-            summary = self.client.get_account_summary()
-            acct = summary.get("account", {})
-            broker_pl = float(acct.get("resettablePL", 0.0))
-            broker_bal = float(acct.get("balance", self.risk_manager.virtual_capital))
-
-            # Auto-sync baseline if state was wiped by container restart
-            if self.risk_manager.state.get("total_trades_count", 0) == 0 and broker_pl != 0.0:
-                self.risk_manager.state["total_realized_pl"] = round(broker_pl, 2)
-                self.risk_manager._save_state(self.risk_manager.state)
-                self.log("INFO", f"Synced broker realized P&L on restart: ${broker_pl:.2f}")
-
             raw_closed = self.client.get_closed_trades(count=50)
             closed = [t for t in raw_closed if is_apex_trade(t)]
+            apex_pl = sum(float(t.get("realizedPL", 0.0)) for t in closed)
+
+            # Auto-sync baseline if state was wiped by container restart or count differs
+            if self.risk_manager.state.get("total_trades_count", 0) != len(closed):
+                self.risk_manager.state["total_realized_pl"] = round(apex_pl, 2)
+                self.risk_manager.state["total_trades_count"] = len(closed)
+                self.risk_manager._save_state(self.risk_manager.state)
+                self.log("INFO", f"Synced APEX realized P&L from broker: ${apex_pl:.2f} ({len(closed)} trades)")
+
             for t in closed:
                 tid = t.get("id")
                 if tid:

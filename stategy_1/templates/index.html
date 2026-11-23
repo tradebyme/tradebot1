@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OANDA Forex Engine | $2k Prop Challenge Terminal</title>
+    <title>OANDA Forex Engine | $5k Prop Challenge Terminal</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -128,7 +128,7 @@
                         </span>
                     </div>
                     <p class="text-xs text-gray-400 mt-0.5 truncate">
-                        $2,000 Challenge &bull; London/NY M15 Momentum Pullback &bull; 1:2 R:R
+                        $5,000 Challenge &bull; London/NY M15 Momentum Pullback &bull; 1:2 R:R
                     </p>
                 </div>
             </div>
@@ -176,14 +176,14 @@
         <!-- TIER 1: PRIMARY EXECUTIVE KPI CARDS (PROFIT TARGET vs DRAWDOWN CUSHION) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
             
-            <!-- HERO CARD 1: CHALLENGE PROFIT TARGET (+8% / +$160.00) -->
+            <!-- HERO CARD 1: CHALLENGE PROFIT TARGET (+8% / +$400.00) -->
             <div class="glass-panel-elevated rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg border-emerald-500/20">
                 <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div class="flex justify-between items-start">
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Target Goal (+8.0%)</span>
-                            <span class="px-2 py-0.2 text-[10px] rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Target: +$160.00</span>
+                            <span class="px-2 py-0.2 text-[10px] rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Target: +$400.00</span>
                         </div>
                         <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="target-profit-val">+$0.00 (+0.0%)</div>
                     </div>
@@ -194,7 +194,7 @@
                 <div class="mt-4">
                     <div class="flex justify-between text-xs text-gray-300 mb-1.5 font-medium">
                         <span>Progress: <span id="target-progress-pct" class="text-emerald-400 font-bold mono">0.0%</span></span>
-                        <span id="target-remaining-text" class="text-gray-400 font-mono text-[11px]">+$160.00 to pass</span>
+                        <span id="target-remaining-text" class="text-gray-400 font-mono text-[11px]">+$400.00 to pass</span>
                     </div>
                     <div class="w-full bg-gray-800/80 rounded-full h-2.5 overflow-hidden p-0.5 border border-gray-700/50">
                         <div id="target-progress-bar" class="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -202,14 +202,14 @@
                 </div>
             </div>
 
-            <!-- HERO CARD 2: CHALLENGE DRAWDOWN SHIELD (-8% / -$160.00) -->
+            <!-- HERO CARD 2: CHALLENGE DRAWDOWN SHIELD (-8% / -$400.00) -->
             <div class="glass-panel-elevated rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg border-rose-500/20">
                 <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div class="flex justify-between items-start">
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">Max Drawdown Shield (-8.0%)</span>
-                            <span class="px-2 py-0.2 text-[10px] rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">Limit: -$160.00</span>
+                            <span class="px-2 py-0.2 text-[10px] rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">Limit: -$400.00</span>
                         </div>
                         <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="total-loss-val">-$0.00 (-0.0%)</div>
                     </div>
@@ -220,7 +220,7 @@
                 <div class="mt-4">
                     <div class="flex justify-between text-xs text-gray-300 mb-1.5 font-medium">
                         <span>Loss Taken: <span id="total-loss-pct" class="text-rose-400 font-bold mono">0.0% / 8.0%</span></span>
-                        <span id="total-loss-buffer" class="text-emerald-400 font-bold mono text-[11px]">$160.00 cushion left</span>
+                        <span id="total-loss-buffer" class="text-emerald-400 font-bold mono text-[11px]">$400.00 cushion left</span>
                     </div>
                     <div class="w-full bg-gray-800/80 rounded-full h-2.5 overflow-hidden p-0.5 border border-gray-700/50">
                         <div id="total-loss-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -255,12 +255,12 @@
                     <span>Challenge Equity</span>
                     <i class="fa-solid fa-wallet text-blue-400"></i>
                 </div>
-                <div class="text-lg sm:text-xl font-bold mt-1 text-white mono" id="challenge-equity">$2,000.00</div>
+                <div class="text-lg sm:text-xl font-bold mt-1 text-white mono" id="challenge-equity">$5,000.00</div>
                 <div class="mt-2 text-[11px] text-gray-400 flex justify-between items-center">
                     <span>Win Rate: <span id="win-rate-text" class="text-emerald-400 font-semibold font-mono">0.0%</span></span>
                     <span id="total-net-pl" class="font-mono text-gray-300 font-semibold">$0.00 net</span>
                 </div>
-                <div class="text-[10px] text-gray-500 mt-1">Base: $2,000 &bull; Floor: $1,840</div>
+                <div class="text-[10px] text-gray-500 mt-1">Base: $5,000 &bull; Floor: $4,600</div>
             </div>
 
             <!-- TILE 3: OANDA BROKER NAV -->
@@ -398,9 +398,9 @@
                 <div>
                     <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                         <i class="fa-solid fa-chart-area text-blue-400"></i>
-                        Challenge Equity Trajectory ($2,000 Baseline)
+                        Challenge Equity Trajectory ($5,000 Baseline)
                     </h2>
-                    <p class="text-[11px] text-gray-400">Target Line: $2,160 (+8%) &bull; Max Drawdown Floor: $1,840 (-8%)</p>
+                    <p class="text-[11px] text-gray-400">Target Line: $5,400 (+8%) &bull; Max Drawdown Floor: $4,600 (-8%)</p>
                 </div>
                 <button onclick="resetChallenge()" class="text-xs text-gray-500 hover:text-rose-400 transition underline">
                     Reset Baseline
@@ -498,7 +498,7 @@
                     datasets: [
                         {
                             label: 'Challenge Equity ($)',
-                            data: [2000],
+                            data: [5000],
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.08)',
                             borderWidth: 2.5,
@@ -508,8 +508,8 @@
                             pointHoverRadius: 5
                         },
                         {
-                            label: 'Target Ceiling ($2,160)',
-                            data: [2160],
+                            label: 'Target Ceiling ($5,400)',
+                            data: [5400],
                             borderColor: '#10b981',
                             borderWidth: 1.5,
                             borderDash: [5, 5],
@@ -517,8 +517,8 @@
                             fill: false
                         },
                         {
-                            label: 'Max Drawdown Floor ($1,840)',
-                            data: [1840],
+                            label: 'Max Drawdown Floor ($4,600)',
+                            data: [4600],
                             borderColor: '#ef4444',
                             borderWidth: 1.5,
                             borderDash: [5, 5],
@@ -624,13 +624,17 @@
                 badge.innerHTML = status;
             }
 
-            // 2. Metrics & Cards
-            // A. Target Profit (+8% / +$160.00)
+            // 2. Metrics & Cards (Dynamic Capital Sizing: $5,000 Prop Challenge)
+            const cap = risk.virtual_capital || 5000.0;
+            const targetUsd = risk.target_profit_usd || (cap * 0.08);
+            const maxDdUsd = risk.max_drawdown_usd || (cap * 0.08);
+
+            // A. Target Profit (+8% / +$400.00 on $5,000)
             const totalPl = risk.total_pl || 0.0;
             const overallProfitUsd = risk.overall_profit_usd !== undefined ? risk.overall_profit_usd : Math.max(0, totalPl);
-            const overallProfitPct = risk.overall_profit_pct !== undefined ? risk.overall_profit_pct : Math.max(0, (totalPl / 2000.0) * 100.0);
-            const profitRemainingUsd = risk.profit_remaining_usd !== undefined ? risk.profit_remaining_usd : Math.max(0, 160.0 - overallProfitUsd);
-            const targetProgress = Math.max(0, Math.min(100, risk.target_progress_pct || 0));
+            const overallProfitPct = risk.overall_profit_pct !== undefined ? risk.overall_profit_pct : Math.max(0, (totalPl / cap) * 100.0);
+            const profitRemainingUsd = risk.profit_remaining_usd !== undefined ? risk.profit_remaining_usd : Math.max(0, targetUsd - overallProfitUsd);
+            const targetProgress = Math.max(0, Math.min(100, risk.target_progress_pct || ((overallProfitUsd / targetUsd) * 100.0)));
 
             const profitValEl = document.getElementById('target-profit-val');
             profitValEl.innerText = `+$${overallProfitUsd.toFixed(2)} (+${overallProfitPct.toFixed(1)}%)`;
@@ -638,11 +642,11 @@
             document.getElementById('target-progress-bar').style.width = `${targetProgress}%`;
             document.getElementById('target-remaining-text').innerText = `$${profitRemainingUsd.toFixed(2)} to pass`;
 
-            // B. Total Loss / Max Drawdown (-8% / -$160.00)
+            // B. Total Loss / Max Drawdown (-8% / -$400.00 on $5,000)
             const overallLossUsd = risk.overall_loss_usd !== undefined ? risk.overall_loss_usd : Math.abs(Math.min(0, totalPl));
-            const overallLossPct = risk.overall_loss_pct !== undefined ? risk.overall_loss_pct : (overallLossUsd / 2000.0) * 100.0;
-            const drawdownBufferUsd = risk.drawdown_buffer_usd !== undefined ? risk.drawdown_buffer_usd : Math.max(0, 160.0 - overallLossUsd);
-            const drawdownUsedPct = Math.max(0, Math.min(100, risk.drawdown_used_pct !== undefined ? risk.drawdown_used_pct : (overallLossUsd / 160.0) * 100.0));
+            const overallLossPct = risk.overall_loss_pct !== undefined ? risk.overall_loss_pct : (overallLossUsd / cap) * 100.0;
+            const drawdownBufferUsd = risk.drawdown_buffer_usd !== undefined ? risk.drawdown_buffer_usd : Math.max(0, maxDdUsd - overallLossUsd);
+            const drawdownUsedPct = Math.max(0, Math.min(100, risk.drawdown_used_pct !== undefined ? risk.drawdown_used_pct : (overallLossUsd / maxDdUsd) * 100.0));
 
             const totalLossValEl = document.getElementById('total-loss-val');
             totalLossValEl.innerText = `-$${overallLossUsd.toFixed(2)} (-${overallLossPct.toFixed(1)}%)`;
@@ -674,7 +678,7 @@
             document.getElementById('daily-loss-bar').style.width = `${dailyLossBarPct}%`;
 
             // D. Challenge Equity & Win Rate
-            document.getElementById('challenge-equity').innerText = `$${(risk.current_equity || 2000).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('challenge-equity').innerText = `$${(risk.current_equity || 5000).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             const totalWins = risk.total_wins || 0;
             const totalLosses = risk.total_losses || 0;
             const winRate = risk.win_rate_pct || 0.0;
@@ -905,11 +909,14 @@
             if (equityChart && risk.equity_history && risk.equity_history.length > 0) {
                 const labels = risk.equity_history.map(h => h.time ? h.time.substring(11, 16) : '');
                 const dataPoints = risk.equity_history.map(h => h.equity);
+                const cap = risk.virtual_capital || 5000.0;
+                const targetCeil = cap * 1.08;
+                const floorVal = cap * 0.92;
                 
                 equityChart.data.labels = labels;
                 equityChart.data.datasets[0].data = dataPoints;
-                equityChart.data.datasets[1].data = labels.map(() => 2160);
-                equityChart.data.datasets[2].data = labels.map(() => 1840);
+                equityChart.data.datasets[1].data = labels.map(() => targetCeil);
+                equityChart.data.datasets[2].data = labels.map(() => floorVal);
                 equityChart.update('none');
             }
 
@@ -1048,7 +1055,7 @@
 
         // Action: Reset Challenge
         async function resetChallenge() {
-            if (!confirm("Reset challenge tracking to initial $2,000 baseline?")) return;
+            if (!confirm("Reset challenge tracking to initial $5,000 baseline?")) return;
             try {
                 await fetch(API_BASE + '/api/bot/reset_challenge', { method: 'POST' });
                 fetchDashboard();

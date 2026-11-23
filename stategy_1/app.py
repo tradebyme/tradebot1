@@ -184,7 +184,7 @@ def close_single_trade(trade_id):
 def reset_challenge():
     """Reset the 3-day challenge state."""
     bot.risk_manager.reset_challenge()
-    bot.log("WARNING", "Challenge state reset to initial $2,000 baseline.")
+    bot.log("WARNING", f"Challenge state reset to initial ${Config.VIRTUAL_CAPITAL:,.0f} baseline.")
     return jsonify({"success": True, "message": "Challenge reset successfully."})
 
 if __name__ == "__main__":
