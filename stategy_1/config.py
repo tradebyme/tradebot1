@@ -16,9 +16,18 @@ else:
 
 class Config:
     # OANDA Credentials
-    # Accept OANDA_API_KEY, oanda_api, or OANDA_API
-    API_KEY = os.getenv("OANDA_API_KEY") or os.getenv("oanda_api") or os.getenv("OANDA_API", "").strip()
-    ACCOUNT_ID = os.getenv("OANDA_ACCOUNT_ID") or os.getenv("oanda_account_id", "").strip()
+    # Check bot-specific key first, then global key
+    API_KEY = (
+        os.getenv("OANDA_API_KEY_1")
+        or os.getenv("OANDA_API_KEY")
+        or os.getenv("oanda_api")
+        or os.getenv("OANDA_API", "7440c485ceedec42c38b0b49f61b7992-88ff981ae8caf36fd9e26fdfde387992")
+    ).strip()
+    ACCOUNT_ID = (
+        os.getenv("OANDA_ACCOUNT_ID_1")
+        or os.getenv("OANDA_ACCOUNT_ID")
+        or os.getenv("oanda_account_id", "101-001-41055093-001")
+    ).strip()
     ENVIRONMENT = os.getenv("OANDA_ENV", "practice").lower().strip() # 'practice' or 'live'
 
     # OANDA Endpoints

@@ -1,0 +1,65 @@
+services:
+  - type: web
+    name: oanda-trend-atr-bot5
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: OANDA_API_KEY
+        sync: false
+      - key: OANDA_ACCOUNT_ID
+        sync: false
+      - key: OANDA_ENV
+        value: practice
+      - key: VIRTUAL_CAPITAL
+        value: "2000.0"
+      - key: TARGET_PROFIT_PCT
+        value: "8.0"
+      - key: MAX_DRAWDOWN_PCT
+        value: "8.0"
+      - key: MAX_DAILY_LOSS_PCT
+        value: "5.0"
+      - key: DAILY_CIRCUIT_BREAKER_PCT
+        value: "3.0"
+      - key: MAX_DAILY_LOSSES
+        value: "2"
+      - key: RISK_PER_TRADE_PCT
+        value: "0.75"
+      - key: INSTRUMENTS
+        value: "XAU_USD,EUR_USD,GBP_USD"
+      - key: TF_XAUUSD
+        value: "H4"
+      - key: TF_EURUSD
+        value: "H4"
+      - key: TF_GBPUSD
+        value: "H1"
+      - key: FAST_EMA
+        value: "20"
+      - key: SLOW_EMA
+        value: "50"
+      - key: TREND_EMA
+        value: "200"
+      - key: ATR_PERIOD
+        value: "14"
+      - key: ATR_SL_MULTIPLIER
+        value: "2.0"
+      - key: ATR_TRAIL_MULTIPLIER
+        value: "3.0"
+      - key: MAX_DIST_ATR_MULTIPLIER
+        value: "2.0"
+      - key: MAX_CONCURRENT_TRADES
+        value: "2"
+      - key: MAX_TRADES_PER_DAY
+        value: "3"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DASHBOARD_USERNAME
+        value: "admin"
+      - key: DASHBOARD_PASSWORD
+        sync: false

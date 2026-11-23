@@ -182,3 +182,4 @@ class RiskManager:
             "balance_after": self.state["current_balance"]
         })
         self.save_state()
+

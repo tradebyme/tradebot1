@@ -65,3 +65,4 @@ python backtest.py --symbol XAUUSD --days 730 --rr 1.5
 1. Create a new Web Service on Render pointing to the `strategy_3/` directory (or use `render.yaml`).
 2. Add your `OANDA_API_KEY` and `OANDA_ACCOUNT_ID` in the Environment Variables.
 3. Configure UptimeRobot to ping `/health` every 5 minutes to prevent instance sleep.
+

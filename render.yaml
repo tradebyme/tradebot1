@@ -1,0 +1,36 @@
+services:
+  # ========================================================
+  # UNIFIED MULTI-BOT SERVICE (Single Free-Tier Web Service)
+  # Page 1: Strategy 1 (M15 Scalper) at / and /strategy1
+  # Page 2: Strategy 5 / APEX SNIPER at /apex and /strategy5
+  # ========================================================
+  - type: web
+    name: oanda-prop-multi-bot
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: OANDA_API_KEY
+        sync: false
+      - key: OANDA_ACCOUNT_ID
+        sync: false
+      - key: OANDA_API_KEY_1
+        sync: false
+      - key: OANDA_ACCOUNT_ID_1
+        sync: false
+      - key: OANDA_API_KEY_APEX
+        sync: false
+      - key: OANDA_ACCOUNT_ID_APEX
+        sync: false
+      - key: OANDA_ENV
+        value: practice
+      - key: VIRTUAL_CAPITAL
+        value: "2000.0"
+      - key: SECRET_KEY
+        generateValue: true

@@ -83,3 +83,4 @@ def api_status():
 
 if __name__ == "__main__":
     app.run(host=Config.HOST, port=Config.PORT, debug=False)
+

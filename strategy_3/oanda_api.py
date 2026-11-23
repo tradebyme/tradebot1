@@ -127,3 +127,4 @@ class OandaAPI:
         except Exception as e:
             logger.error(f"Error fetching closed trades: {e}")
         return []
+

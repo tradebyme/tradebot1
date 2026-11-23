@@ -30,3 +30,4 @@ services:
         value: "EUR_USD,GBP_USD,XAU_USD"
       - key: TIMEFRAME
         value: "M15"
+

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Strategy 5: Institutional Trend-ATR Terminal | Render Cloud</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#0f172a',
+                            900: '#0b1120',
+                            950: '#070a12',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
+            background-color: #070a12;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .glass-panel-elevated {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(71, 85, 105, 0.6);
+        }
+
+        .badge-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
+
+    <!-- MULTI-BOT ISOLATED NAVIGATION TABS -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1">
+        <nav class="glass-panel rounded-2xl p-2.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xl border border-slate-700/60">
+            <div class="flex flex-wrap items-center gap-2 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+                <a href="/strategy1" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-blue-400"></i>
+                    <span>Bot 1: Strategy 1 (M15 Scalper)</span>
+                </a>
+                <a href="/apex" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-gradient-to-r from-amber-600 via-orange-600 to-indigo-600 text-white shadow-md shadow-amber-500/25">
+                    <i class="fa-solid fa-crosshairs text-white"></i>
+                    <span>Bot 2: APEX SNIPER (H4/H1 Institutional)</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/30 text-emerald-300 font-bold border border-emerald-500/40">5-YR PASS</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5"></span>
+                </a>
+            </div>
+            <div class="flex items-center justify-between sm:justify-end gap-3 px-3 text-[11px] text-slate-400 mono">
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-code-branch text-indigo-400"></i>
+                    <span>Git: <strong class="text-slate-200">tradebot1:main</strong></span>
+                </span>
+                <span class="hidden md:inline-block text-slate-600">&bull;</span>
+                <span class="flex items-center gap-1 text-amber-400">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Isolated Risk Engine & API Keys</span>
+                </span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- TOP NAVIGATION -->
+    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-chart-line text-white text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold tracking-tight text-white">Strategy 5: Trend-ATR Engine</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">ITAP</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 flex items-center gap-1.5 mono">
+                        <span>Gold H4 + EURUSD H4 + GBPUSD H1</span>
+                        <span>&bull;</span>
+                        <span id="bot-status-indicator" class="inline-flex items-center gap-1 text-emerald-400 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-pulse"></span> ACTIVE
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="flex items-center space-x-2">
+                <button id="toggle-btn" onclick="toggleBot()"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-pause"></i>
+                    <span id="toggle-text">Pause Bot</span>
+                </button>
+                <button onclick="emergencyCloseAll()"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-ban"></i>
+                    <span>Close All</span>
+                </button>
+                <a href="/logout"
+                    class="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
+                    title="Logout">
+                    <i class="fa-solid fa-right-from-bracket text-sm"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+        <!-- STATUS BANNER -->
+        <div id="status-banner" class="rounded-xl p-3.5 text-xs flex items-center justify-between border bg-emerald-500/10 border-emerald-500/20 text-emerald-300">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                <span id="status-message" class="font-medium">Bot active and scanning macro trends. Daily circuit breaker primed at 3.0%.</span>
+            </div>
+            <span class="mono text-[11px] text-slate-400" id="last-updated-time">Syncing...</span>
+        </div>
+
+        <!-- KEY STAT CARDS -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+            <!-- CARD 1: ACCOUNT EQUITY -->
+            <div class="glass-panel p-4 rounded-2xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Current Equity</div>
+                <div class="text-2xl font-bold mono text-white" id="stat-equity">$--.--</div>
+                <div class="mt-2 flex items-center justify-between text-xs">
+                    <span class="text-slate-400">Capital: <span class="mono font-medium" id="stat-capital">$2,000.00</span></span>
+                    <span id="stat-floating-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold mono bg-slate-800 text-slate-400">
+                        Float: $0.00
+                    </span>
+                </div>
+            </div>
+
+            <!-- CARD 2: TOTAL REALIZED P/L -->
+            <div class="glass-panel p-4 rounded-2xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Realized P/L</div>
+                <div class="text-2xl font-bold mono" id="stat-realized">$0.00</div>
+                <div class="mt-2 flex items-center justify-between text-xs">
+                    <span class="text-slate-400">Target: <span class="mono text-amber-400 font-medium" id="stat-target">+$160.00</span></span>
+                    <span id="stat-progress-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold mono bg-amber-500/10 text-amber-400">
+                        0.0%
+                    </span>
+                </div>
+            </div>
+
+            <!-- CARD 3: TODAY'S P/L & CIRCUIT BREAKER -->
+            <div class="glass-panel p-4 rounded-2xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Daily P/L (Today)</div>
+                <div class="text-2xl font-bold mono" id="stat-daily-pl">$0.00</div>
+                <div class="mt-2 flex items-center justify-between text-xs">
+                    <span class="text-slate-400">Circuit Breaker:</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold mono bg-rose-500/10 text-rose-400 border border-rose-500/20" id="stat-cb">
+                        -$60.00 (3%)
+                    </span>
+                </div>
+            </div>
+
+            <!-- CARD 4: WIN RATE & TRADES -->
+            <div class="glass-panel p-4 rounded-2xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Win Rate & Trades</div>
+                <div class="text-2xl font-bold mono text-white" id="stat-winrate">0.0%</div>
+                <div class="mt-2 flex items-center justify-between text-xs">
+                    <span class="text-slate-400">Trades: <span class="mono text-white font-medium" id="stat-trades-count">0</span></span>
+                    <span class="text-[11px] text-slate-400 mono">
+                        W: <span class="text-emerald-400 font-bold" id="stat-wins">0</span> / L: <span class="text-rose-400 font-bold" id="stat-losses">0</span>
+                    </span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- PROGRESS GAUGES -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- TARGET GAUGE -->
+            <div class="glass-panel p-4 rounded-2xl space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> Phase 1 Target Progress (+8.0%)
+                    </span>
+                    <span class="mono font-bold text-amber-400" id="target-gauge-pct">0.0%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                    <div id="target-progress-bar" class="bg-gradient-to-r from-amber-500 to-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-[11px] text-slate-500 mono">
+                    <span>Base: $2,000.00</span>
+                    <span>Goal: $2,160.00</span>
+                </div>
+            </div>
+
+            <!-- MAX DRAWDOWN GAUGE -->
+            <div class="glass-panel p-4 rounded-2xl space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-virus text-indigo-400"></i> Maximum Drawdown Ceiling (8.0%)
+                    </span>
+                    <span class="mono font-bold text-indigo-400" id="dd-gauge-pct">0.0%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                    <div id="dd-progress-bar" class="bg-gradient-to-r from-indigo-500 to-rose-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-[11px] text-slate-500 mono">
+                    <span>Floor: $1,840.00 (-$160.00)</span>
+                    <span class="text-emerald-400 font-semibold" id="dd-buffer-text">Buffer: 100% Safe</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- EQUITY CURVE CHART -->
+        <div class="glass-panel p-5 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-area text-amber-400 text-sm"></i>
+                    <h2 class="text-sm font-bold text-white tracking-tight">Challenge Equity Curve</h2>
+                </div>
+                <button onclick="resetChallenge()" class="text-xs text-slate-400 hover:text-rose-400 transition flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Stats
+                </button>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="equityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- OPEN POSITIONS TABLE -->
+        <div class="glass-panel rounded-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-amber-400 text-sm"></i>
+                    <h2 class="text-sm font-bold text-white tracking-tight">Active Portfolio Trades</h2>
+                </div>
+                <span id="open-trades-badge" class="px-2 py-0.5 rounded text-[10px] font-bold mono bg-slate-800 text-slate-400">
+                    0 Positions
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                        <tr>
+                            <th class="py-3 px-4">Trade ID</th>
+                            <th class="py-3 px-4">Instrument</th>
+                            <th class="py-3 px-4">Side</th>
+                            <th class="py-3 px-4">Units</th>
+                            <th class="py-3 px-4">Entry</th>
+                            <th class="py-3 px-4">Stop Loss (Ratcheted)</th>
+                            <th class="py-3 px-4 text-right">Unrealized P/L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="open-trades-tbody" class="divide-y divide-slate-800/60 mono">
+                        <tr>
+                            <td colspan="7" class="py-6 text-center text-slate-500 font-sans">
+                                No open trades. Bot is monitoring H1/H4 closed candles for valid setups.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SYSTEM LOGS CONSOLE -->
+        <div class="glass-panel rounded-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-terminal text-emerald-400 text-sm"></i>
+                    <h2 class="text-sm font-bold text-white tracking-tight">Live Strategy Terminal Feed</h2>
+                </div>
+                <span class="text-[10px] text-slate-400 mono">Auto-refresh (5s)</span>
+            </div>
+            <div id="logs-container" class="p-4 bg-slate-950 font-mono text-[11px] h-48 overflow-y-auto space-y-1 text-slate-300">
+                <div class="text-slate-500">// Terminal initialized. Streaming live trade events...</div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800 py-4 bg-slate-950 text-center text-xs text-slate-500 mono">
+        Institutional Trend-ATR Portfolio Engine &bull; MetaTrader 5 & OANDA v20 REST &bull; Cloud Deployed
+    </footer>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        let equityChart = null;
+
+        function initChart() {
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            equityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Equity ($)',
+                        data: [],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        fill: true,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.2)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: {
+                                    family: 'JetBrains Mono'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        const API_BASE = (window.location.pathname.startsWith('/apex') || window.location.pathname.startsWith('/strategy5'))
+            ? window.location.pathname.replace(/\/$/, '')
+            : '';
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch(API_BASE + '/api/status');
+                if (!res.ok) return;
+                const data = await res.json();
+                renderUI(data);
+            } catch (err) {
+                console.error("Status fetch failed", err);
+            }
+        }
+
+        function renderUI(data) {
+            const m = data.metrics;
+
+            // Stats
+            document.getElementById('stat-equity').textContent = `$${m.current_equity.toFixed(2)}`;
+            document.getElementById('stat-capital').textContent = `$${m.virtual_capital.toFixed(2)}`;
+            
+            const floatBadge = document.getElementById('stat-floating-badge');
+            floatBadge.textContent = `Float: ${m.floating_pl >= 0 ? '+' : ''}$${m.floating_pl.toFixed(2)}`;
+            floatBadge.className = `px-1.5 py-0.5 rounded text-[10px] font-bold mono ${m.floating_pl >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`;
+
+            const realElem = document.getElementById('stat-realized');
+            realElem.textContent = `${m.realized_pl >= 0 ? '+' : ''}$${m.realized_pl.toFixed(2)}`;
+            realElem.className = `text-2xl font-bold mono ${m.realized_pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            document.getElementById('stat-target').textContent = `+$${m.target_profit_usd.toFixed(2)}`;
+            document.getElementById('stat-progress-badge').textContent = `${m.progress_pct}%`;
+
+            const dailyElem = document.getElementById('stat-daily-pl');
+            dailyElem.textContent = `${m.daily_pl >= 0 ? '+' : ''}$${m.daily_pl.toFixed(2)}`;
+            dailyElem.className = `text-2xl font-bold mono ${m.daily_pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            document.getElementById('stat-cb').textContent = `-$${m.circuit_breaker_usd.toFixed(2)} (3%)`;
+            document.getElementById('stat-winrate').textContent = `${m.win_rate}%`;
+            document.getElementById('stat-trades-count').textContent = m.total_trades;
+            document.getElementById('stat-wins').textContent = m.total_wins;
+            document.getElementById('stat-losses').textContent = m.total_losses;
+
+            // Gauges
+            document.getElementById('target-gauge-pct').textContent = `${m.progress_pct}%`;
+            document.getElementById('target-progress-bar').style.width = `${Math.min(100, m.progress_pct)}%`;
+
+            const ddPct = Math.min(100, Math.max(0, (-m.realized_pl / m.max_drawdown_usd) * 100));
+            document.getElementById('dd-gauge-pct').textContent = `${ddPct.toFixed(1)}%`;
+            document.getElementById('dd-progress-bar').style.width = `${ddPct}%`;
+
+            // Status message
+            document.getElementById('status-message').textContent = m.status_message;
+            document.getElementById('last-updated-time').textContent = new Date().toLocaleTimeString();
+
+            // Toggle Button
+            const toggleBtn = document.getElementById('toggle-btn');
+            const toggleText = document.getElementById('toggle-text');
+            const botInd = document.getElementById('bot-status-indicator');
+
+            if (data.is_running) {
+                toggleBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white transition flex items-center gap-1.5 shadow-sm";
+                toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i><span>Pause Bot</span>';
+                botInd.className = "inline-flex items-center gap-1 text-emerald-400 font-medium";
+                botInd.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-pulse"></span> ACTIVE';
+            } else {
+                toggleBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm";
+                toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Resume Bot</span>';
+                botInd.className = "inline-flex items-center gap-1 text-amber-400 font-medium";
+                botInd.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> PAUSED';
+            }
+
+            // Open trades
+            const tbody = document.getElementById('open-trades-tbody');
+            const openCount = data.open_trades ? data.open_trades.length : 0;
+            document.getElementById('open-trades-badge').textContent = `${openCount} Positions`;
+
+            if (openCount === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 font-sans">No open trades. Bot is monitoring H1/H4 closed candles for valid setups.</td></tr>`;
+            } else {
+                tbody.innerHTML = data.open_trades.map(t => {
+                    const units = parseInt(t.currentUnits || 0);
+                    const isLong = units > 0;
+                    const sl = t.stopLossOrder ? parseFloat(t.stopLossOrder.price).toFixed(4) : "None";
+                    const pl = parseFloat(t.unrealizedPL || 0);
+                    return `
+                        <tr class="hover:bg-slate-900/40 transition">
+                            <td class="py-3 px-4 font-semibold text-slate-300">#${t.id}</td>
+                            <td class="py-3 px-4 font-bold text-white">${t.instrument}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isLong ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">
+                                    ${isLong ? 'LONG' : 'SHORT'}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4">${Math.abs(units)}</td>
+                            <td class="py-3 px-4">${parseFloat(t.price).toFixed(4)}</td>
+                            <td class="py-3 px-4 text-amber-400">${sl}</td>
+                            <td class="py-3 px-4 text-right font-bold ${pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Logs
+            const logsContainer = document.getElementById('logs-container');
+            if (data.logs && data.logs.length > 0) {
+                logsContainer.innerHTML = data.logs.slice().reverse().map(l => {
+                    let color = 'text-slate-300';
+                    if (l.level === 'WARNING') color = 'text-amber-400';
+                    if (l.level === 'ERROR') color = 'text-rose-400 font-bold';
+                    return `<div><span class="text-slate-500">[${l.time}]</span> <span class="${color}">${l.message}</span></div>`;
+                }).join('');
+            }
+
+            // Chart
+            if (equityChart && m.equity_history && m.equity_history.length > 0) {
+                equityChart.data.labels = m.equity_history.map(h => h.time ? h.time.split('T')[1].slice(0, 5) : '');
+                equityChart.data.datasets[0].data = m.equity_history.map(h => h.equity);
+                equityChart.update();
+            }
+        }
+
+        async function toggleBot() {
+            try {
+                await fetch(API_BASE + '/api/toggle', { method: 'POST' });
+                fetchStatus();
+            } catch (e) {
+                alert("Failed to toggle bot: " + e);
+            }
+        }
+
+        async function emergencyCloseAll() {
+            if (!confirm("Are you sure you want to close ALL open positions immediately?")) return;
+            try {
+                const res = await fetch(API_BASE + '/api/close_all', { method: 'POST' });
+                const json = await res.json();
+                alert(`Closed ${json.closed_trades ? json.closed_trades.length : 0} positions.`);
+                fetchStatus();
+            } catch (e) {
+                alert("Emergency close failed: " + e);
+            }
+        }
+
+        async function resetChallenge() {
+            if (!confirm("Reset challenge metrics back to default baseline ($2,000)?")) return;
+            try {
+                await fetch(API_BASE + '/api/reset_challenge', { method: 'POST' });
+                fetchStatus();
+            } catch (e) {
+                alert("Reset failed: " + e);
+            }
+        }
+
+        window.onload = () => {
+            initChart();
+            fetchStatus();
+            setInterval(fetchStatus, 5000);
+        };
+    </script>
+</body>
+
+</html>

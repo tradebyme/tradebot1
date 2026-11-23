@@ -164,3 +164,4 @@ class TradingBot:
         """Stop background worker."""
         self.is_running = False
         logger.info("Strategy 3 Trading Bot stopped.")
+

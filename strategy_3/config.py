@@ -69,3 +69,4 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "strategy3-smc-sweep-key-2026")
     DASHBOARD_USERNAME = os.getenv("DASHBOARD_USERNAME", "admin")
     DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "oandabot2026")
+
