@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config import Config
 from trading_bot import TradingBot
+from apex_bot import ApexTradingBot
 
 # Configure logging
 logging.basicConfig(
@@ -21,11 +22,12 @@ logger = logging.getLogger("App")
 app = Flask(__name__, template_folder="templates")
 app.secret_key = Config.SECRET_KEY
 
-# Initialize the Bot Engine
+# Initialize Both Bot Engines (100% Isolated State & Risk Management)
 bot = TradingBot()
-
-# Automatically start background bot thread
 bot.start_background()
+
+apex_bot = ApexTradingBot()
+apex_bot.start_background()
 
 @app.before_request
 def check_auth():
@@ -47,7 +49,7 @@ def check_auth():
         return None
 
     # 5. Unauthorized handling
-    if request.path.startswith("/api/"):
+    if "/api/" in request.path:
         return jsonify({"error": "Unauthorized. Please log in."}), 401
     
     return redirect(url_for("login"))
@@ -77,18 +79,59 @@ def logout():
     return redirect(url_for("login"))
 
 @app.route("/")
+@app.route("/strategy1")
 def index():
-    """Render the main trading dashboard."""
+    """Render Strategy 1 trading dashboard (Page 1)."""
     return render_template("index.html")
+
+@app.route("/apex")
+@app.route("/strategy5")
+def apex_dashboard():
+    """Render APEX SNIPER Institutional trading dashboard (Page 2)."""
+    return render_template("apex.html")
 
 @app.route("/health")
 def health():
     """Health check endpoint for Render and UptimeRobot keep-alive."""
     return jsonify({
         "status": "healthy",
-        "bot_running": bot.is_running,
+        "strategy_1_running": bot.is_running,
+        "apex_sniper_running": apex_bot.is_running,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }), 200
+
+# ========================================================
+# APEX SNIPER APIs (Consumed by apex.html)
+# ========================================================
+
+@app.route("/api/apex/status")
+@app.route("/apex/api/status")
+def apex_status():
+    """Real-time data feed for APEX SNIPER dashboard."""
+    try:
+        data = apex_bot.get_dashboard_data()
+        return jsonify(data), 200
+    except Exception as e:
+        logger.error(f"Error fetching APEX status: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/apex/toggle", methods=["POST"])
+@app.route("/apex/api/toggle", methods=["POST"])
+def apex_toggle():
+    new_status = apex_bot.toggle_pause()
+    return jsonify({"success": True, "status": new_status})
+
+@app.route("/api/apex/close_all", methods=["POST"])
+@app.route("/apex/api/close_all", methods=["POST"])
+def apex_close_all():
+    results = apex_bot.emergency_close_all()
+    return jsonify({"success": True, "closed_trades": results})
+
+@app.route("/api/apex/reset_challenge", methods=["POST"])
+@app.route("/apex/api/reset_challenge", methods=["POST"])
+def apex_reset():
+    apex_bot.reset_challenge()
+    return jsonify({"success": True, "message": "APEX SNIPER challenge reset successfully."})
 
 @app.route("/api/status")
 def get_status():

@@ -2,7 +2,7 @@ import time
 import json
 import logging
 import requests
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from config import Config
 
 logger = logging.getLogger("OandaAPI")
@@ -189,6 +189,32 @@ class OandaClient:
             return {"success": False, "error": reason}
         
         return {"success": True, "raw": res}
+
+    def get_pip_specs(self, instrument: str) -> Tuple[float, float, int]:
+        """
+        Returns (pip_size, pip_value_factor, price_precision).
+        XAU_USD: pip_size=0.10, precision=2
+        JPY pairs: pip_size=0.01, precision=3
+        Standard pairs: pip_size=0.0001, precision=5
+        """
+        if instrument == "XAU_USD":
+            return 0.10, 1.0, 2
+        elif "JPY" in instrument:
+            return 0.01, 100.0, 3
+        else:
+            return 0.0001, 10000.0, 5
+
+    def modify_trade_stop_loss(self, trade_id: str, new_stop_loss: float, instrument: str) -> Dict[str, Any]:
+        """Modify or ratchet the Stop Loss price on an existing active trade on OANDA."""
+        endpoint = f"/accounts/{self.account_id}/trades/{trade_id}/orders"
+        _, _, precision = self.get_pip_specs(instrument)
+        body = {
+            "stopLoss": {
+                "price": f"{new_stop_loss:.{precision}f}",
+                "timeInForce": "GTC"
+            }
+        }
+        return self._request("PUT", endpoint, data=body)
 
     def close_trade(self, trade_id: str, units: Optional[str] = "ALL") -> Dict[str, Any]:
         """Close an open trade by its trade ID."""

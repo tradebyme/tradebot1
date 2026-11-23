@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>APEX SNIPER: Institutional Trend-ATR Terminal | Render Cloud</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#0f172a',
+                            900: '#0b1120',
+                            950: '#070a12',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
+            background-color: #070a12;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .glass-panel-elevated {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(71, 85, 105, 0.6);
+        }
+
+        .badge-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
+
+    <!-- MULTI-BOT ISOLATED NAVIGATION TABS -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1">
+        <nav class="glass-panel rounded-2xl p-2.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xl border border-slate-700/60">
+            <div class="flex flex-wrap items-center gap-2 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+                <a href="/strategy1" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-blue-400"></i>
+                    <span>Bot 1: Strategy 1 (M15 Scalper)</span>
+                </a>
+                <a href="/apex" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-gradient-to-r from-amber-600 via-orange-600 to-indigo-600 text-white shadow-md shadow-amber-500/25">
+                    <i class="fa-solid fa-crosshairs text-white"></i>
+                    <span>Bot 2: APEX SNIPER (H4/H1 Institutional)</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/30 text-emerald-300 font-bold border border-emerald-500/40">5-YR PASS</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5"></span>
+                </a>
+            </div>
+            <div class="flex items-center justify-between sm:justify-end gap-3 px-3 text-[11px] text-slate-400 mono">
+                <span class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-code-branch text-indigo-400"></i>
+                    <span>Git: <strong class="text-slate-200">tradebot1:main</strong></span>
+                </span>
+                <span class="hidden md:inline-block text-slate-600">&bull;</span>
+                <span class="flex items-center gap-1 text-amber-400">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Isolated Risk Engine & API Keys</span>
+                </span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- TOP NAVIGATION -->
+    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-crosshairs text-white text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold tracking-tight text-white">APEX SNIPER: Institutional Engine</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">ITAP</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 flex items-center gap-1.5 mono">
+                        <span>Gold H4 + EURUSD H4 + GBPUSD H1</span>
+                        <span>&bull;</span>
+                        <span id="bot-status-indicator" class="inline-flex items-center gap-1 text-emerald-400 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-pulse"></span> ACTIVE
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="flex items-center space-x-2">
+                <button id="toggle-btn" onclick="toggleBot()"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-pause"></i>
+                    <span id="toggle-text">Pause Bot</span>
+                </button>
+                <button onclick="emergencyCloseAll()"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-ban"></i>
+                    <span>Close All</span>
+                </button>
+                <a href="/logout"
+                    class="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
+                    title="Logout">
+                    <i class="fa-solid fa-right-from-bracket text-sm"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1 w-full">
+
+        <!-- STATUS BANNER -->
+        <div class="glass-panel p-4 rounded-xl flex items-center justify-between border-l-4 border-l-amber-500 shadow-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-shield-halved text-amber-400 text-lg"></i>
+                <div>
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Prop Firm Risk Guard</h3>
+                    <p id="status-message" class="text-sm font-medium text-slate-200">
+                        Bot active. Monitoring 200 EMA Macro Trend & 20/50 Crosses with 3.0x ATR Trailing.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="resetChallenge()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-1 border border-slate-700">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Challenge
+                </button>
+                <span class="text-xs text-slate-500 mono" id="last-updated-time">--:--:--</span>
+            </div>
+        </div>
+
+        <!-- KEY METRICS GRID -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Metric 1: Equity -->
+            <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Virtual Equity</span>
+                    <span id="stat-floating-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold mono bg-slate-800 text-slate-300">Float: $0.00</span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span id="stat-equity" class="text-2xl font-bold mono text-white">$2,000.00</span>
+                    <span class="text-xs text-slate-500 mono">/ <span id="stat-capital">$2,000</span></span>
+                </div>
+                <div class="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
+                    <span>Realized P&L:</span>
+                    <span id="stat-realized" class="font-bold mono text-emerald-400">+$0.00</span>
+                </div>
+            </div>
+
+            <!-- Metric 2: Challenge Target -->
+            <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Target (+8.0%)</span>
+                    <span id="stat-progress-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold mono bg-amber-500/10 text-amber-400">0.0%</span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span id="stat-target" class="text-2xl font-bold mono text-amber-400">+$160.00</span>
+                </div>
+                <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div id="target-progress-bar" class="bg-gradient-to-r from-amber-500 to-emerald-400 h-1.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Metric 3: Daily Circuit Breaker -->
+            <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Today P&L</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold mono bg-rose-500/10 text-rose-400">Max -3%</span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span id="stat-daily-pl" class="text-2xl font-bold mono text-slate-200">$0.00</span>
+                </div>
+                <div class="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
+                    <span>Limit:</span>
+                    <span id="stat-cb" class="font-bold mono text-rose-400">-$60.00 (3%)</span>
+                </div>
+            </div>
+
+            <!-- Metric 4: Win Rate & Trades -->
+            <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span>Performance</span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span id="stat-winrate" class="text-2xl font-bold mono text-white">0.0%</span>
+                    <span class="text-xs text-slate-500">Win Rate</span>
+                </div>
+                <div class="mt-2 text-[11px] text-slate-400 flex items-center gap-2">
+                    <span>Trades: <strong id="stat-trades-count" class="text-slate-200">0</strong></span>
+                    <span>&bull;</span>
+                    <span class="text-emerald-400 font-semibold"><span id="stat-wins">0</span>W</span>
+                    <span class="text-rose-400 font-semibold"><span id="stat-losses">0</span>L</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAUGES & SUMMARY -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Profit Progress Gauge -->
+            <div class="glass-panel p-4 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Phase 1 Target Progress</span>
+                    <span id="target-gauge-pct" class="text-xs font-bold mono text-amber-400">0.0%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div id="target-progress-bar-2" class="bg-gradient-to-r from-amber-500 to-emerald-400 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">Target: +$160.00 (+8.0% on $2,000). Zero daily breaches allowed.</p>
+            </div>
+
+            <!-- Drawdown Gauge -->
+            <div class="glass-panel p-4 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Drawdown Cushion Floor</span>
+                    <span id="dd-gauge-pct" class="text-xs font-bold mono text-emerald-400">0.0% / 8.0%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div id="dd-progress-bar" class="bg-rose-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">Hard Stop Floor: $1,840.00 (-$160 max loss). Daily Circuit Breaker at -$60.00.</p>
+            </div>
+        </div>
+
+        <!-- OPEN POSITIONS TABLE -->
+        <div class="glass-panel rounded-xl overflow-hidden shadow-sm">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-layer-group text-slate-400"></i>
+                    <h2 class="text-sm font-bold text-white">Active Open Positions</h2>
+                    <span id="open-trades-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">0 Positions</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300 mono">
+                    <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-800 uppercase text-[10px] tracking-wider">
+                        <tr>
+                            <th class="py-3 px-4">Trade ID</th>
+                            <th class="py-3 px-4">Instrument</th>
+                            <th class="py-3 px-4">Type</th>
+                            <th class="py-3 px-4">Units</th>
+                            <th class="py-3 px-4">Open Price</th>
+                            <th class="py-3 px-4">Dynamic SL (3x ATR)</th>
+                            <th class="py-3 px-4 text-right">Floating P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="open-trades-tbody" class="divide-y divide-slate-800/60 font-sans">
+                        <tr>
+                            <td colspan="7" class="py-6 text-center text-slate-500">
+                                No open trades. Bot is monitoring H1/H4 closed candles for valid setups.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CHARTS & LOGS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Equity Curve -->
+            <div class="glass-panel p-4 rounded-xl flex flex-col h-80">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-line text-amber-400"></i> Equity Curve
+                    </span>
+                    <span class="text-[10px] mono text-slate-500">Challenge Realized P&L</span>
+                </div>
+                <div class="flex-1 relative">
+                    <canvas id="equity-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Terminal Feed Logs -->
+            <div class="glass-panel p-4 rounded-xl flex flex-col h-80">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-terminal text-emerald-400"></i> APEX Decision Terminal
+                    </span>
+                    <span class="text-[10px] text-slate-500 mono">Live H1/H4 Trend Feed</span>
+                </div>
+                <div id="logs-container" class="flex-1 overflow-y-auto space-y-1.5 p-3 bg-slate-950/80 rounded-lg text-xs mono border border-slate-800/80 select-text">
+                    <div class="text-slate-500">Connecting to APEX SNIPER engine feed...</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 mono">
+        OANDA v20 REST API &bull; APEX SNIPER Institutional Portfolio &bull; 5-Year Backtest Verified
+    </footer>
+
+    <script>
+        let equityChart = null;
+
+        function initChart() {
+            const ctx = document.getElementById('equity-chart').getContext('2d');
+            equityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Start'],
+                    datasets: [{
+                        label: 'Equity ($)',
+                        data: [2000],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.2,
+                        pointRadius: 2,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(51, 65, 85, 0.2)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(51, 65, 85, 0.2)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/apex/status');
+                if (!res.ok) return;
+                const data = await res.json();
+                renderUI(data);
+            } catch (err) {
+                console.error("APEX Status fetch failed", err);
+            }
+        }
+
+        function renderUI(data) {
+            const m = data.metrics;
+
+            // Stats
+            document.getElementById('stat-equity').textContent = `$${m.current_equity.toFixed(2)}`;
+            document.getElementById('stat-capital').textContent = `$${m.virtual_capital.toFixed(2)}`;
+            
+            const floatBadge = document.getElementById('stat-floating-badge');
+            floatBadge.textContent = `Float: ${m.floating_pl >= 0 ? '+' : ''}$${m.floating_pl.toFixed(2)}`;
+            floatBadge.className = `px-1.5 py-0.5 rounded text-[10px] font-bold mono ${m.floating_pl >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`;
+
+            const realElem = document.getElementById('stat-realized');
+            realElem.textContent = `${m.realized_pl >= 0 ? '+' : ''}$${m.realized_pl.toFixed(2)}`;
+            realElem.className = `text-2xl font-bold mono ${m.realized_pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            document.getElementById('stat-target').textContent = `+$${m.target_profit_usd.toFixed(2)}`;
+            document.getElementById('stat-progress-badge').textContent = `${m.progress_pct}%`;
+
+            const dailyElem = document.getElementById('stat-daily-pl');
+            dailyElem.textContent = `${m.daily_pl >= 0 ? '+' : ''}$${m.daily_pl.toFixed(2)}`;
+            dailyElem.className = `text-2xl font-bold mono ${m.daily_pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            document.getElementById('stat-cb').textContent = `-$${m.circuit_breaker_usd.toFixed(2)} (3%)`;
+            document.getElementById('stat-winrate').textContent = `${m.win_rate}%`;
+            document.getElementById('stat-trades-count').textContent = m.total_trades;
+            document.getElementById('stat-wins').textContent = m.total_wins;
+            document.getElementById('stat-losses').textContent = m.total_losses;
+
+            // Gauges
+            document.getElementById('target-gauge-pct').textContent = `${m.progress_pct}%`;
+            document.getElementById('target-progress-bar').style.width = `${Math.min(100, m.progress_pct)}%`;
+            document.getElementById('target-progress-bar-2').style.width = `${Math.min(100, m.progress_pct)}%`;
+
+            const ddPct = Math.min(100, Math.max(0, (-m.realized_pl / m.max_drawdown_usd) * 100));
+            document.getElementById('dd-gauge-pct').textContent = `${ddPct.toFixed(1)}%`;
+            document.getElementById('dd-progress-bar').style.width = `${ddPct}%`;
+
+            // Status message
+            document.getElementById('status-message').textContent = m.status_message;
+            document.getElementById('last-updated-time').textContent = new Date().toLocaleTimeString();
+
+            // Toggle Button
+            const toggleBtn = document.getElementById('toggle-btn');
+            const botInd = document.getElementById('bot-status-indicator');
+
+            if (data.is_running) {
+                toggleBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white transition flex items-center gap-1.5 shadow-sm";
+                toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i><span>Pause Bot</span>';
+                botInd.className = "inline-flex items-center gap-1 text-emerald-400 font-medium";
+                botInd.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-pulse"></span> ACTIVE';
+            } else {
+                toggleBtn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm";
+                toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Resume Bot</span>';
+                botInd.className = "inline-flex items-center gap-1 text-amber-400 font-medium";
+                botInd.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> PAUSED';
+            }
+
+            // Open trades
+            const tbody = document.getElementById('open-trades-tbody');
+            const openCount = data.open_trades ? data.open_trades.length : 0;
+            document.getElementById('open-trades-badge').textContent = `${openCount} Positions`;
+
+            if (openCount === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 font-sans">No open trades. Bot is monitoring H1/H4 closed candles for valid setups.</td></tr>`;
+            } else {
+                tbody.innerHTML = data.open_trades.map(t => {
+                    const units = parseInt(t.currentUnits || 0);
+                    const isLong = units > 0;
+                    const sl = t.stopLossOrder ? parseFloat(t.stopLossOrder.price).toFixed(4) : "None";
+                    const pl = parseFloat(t.unrealizedPL || 0);
+                    return `
+                        <tr class="hover:bg-slate-900/40 transition">
+                            <td class="py-3 px-4 font-semibold text-slate-300">#${t.id}</td>
+                            <td class="py-3 px-4 font-bold text-white">${t.instrument}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isLong ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">
+                                    ${isLong ? 'LONG' : 'SHORT'}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4">${Math.abs(units)}</td>
+                            <td class="py-3 px-4">${parseFloat(t.price).toFixed(4)}</td>
+                            <td class="py-3 px-4 text-amber-400">${sl}</td>
+                            <td class="py-3 px-4 text-right font-bold ${pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Logs
+            const logsContainer = document.getElementById('logs-container');
+            if (data.logs && data.logs.length > 0) {
+                logsContainer.innerHTML = data.logs.slice().reverse().map(l => {
+                    let color = 'text-slate-300';
+                    if (l.level === 'WARNING') color = 'text-amber-400';
+                    if (l.level === 'ERROR') color = 'text-rose-400 font-bold';
+                    return `<div><span class="text-slate-500">[${l.time}]</span> <span class="${color}">${l.message}</span></div>`;
+                }).join('');
+            }
+
+            // Chart
+            if (equityChart && m.equity_history && m.equity_history.length > 0) {
+                equityChart.data.labels = m.equity_history.map(h => h.time ? h.time.split('T')[1].slice(0, 5) : '');
+                equityChart.data.datasets[0].data = m.equity_history.map(h => h.equity);
+                equityChart.update();
+            }
+        }
+
+        async function toggleBot() {
+            try {
+                await fetch('/api/apex/toggle', { method: 'POST' });
+                fetchStatus();
+            } catch (e) {
+                alert("Failed to toggle bot: " + e);
+            }
+        }
+
+        async function emergencyCloseAll() {
+            if (!confirm("Are you sure you want to close ALL open positions immediately?")) return;
+            try {
+                const res = await fetch('/api/apex/close_all', { method: 'POST' });
+                const json = await res.json();
+                alert(`Closed ${json.closed_trades ? json.closed_trades.length : 0} positions.`);
+                fetchStatus();
+            } catch (e) {
+                alert("Emergency close failed: " + e);
+            }
+        }
+
+        async function resetChallenge() {
+            if (!confirm("Reset challenge metrics back to default baseline ($2,000)?")) return;
+            try {
+                await fetch('/api/apex/reset_challenge', { method: 'POST' });
+                fetchStatus();
+            } catch (e) {
+                alert("Reset failed: " + e);
+            }
+        }
+
+        window.onload = () => {
+            initChart();
+            fetchStatus();
+            setInterval(fetchStatus, 5000);
+        };
+    </script>
+</body>
+
+</html>
