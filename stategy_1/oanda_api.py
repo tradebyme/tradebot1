@@ -136,38 +136,48 @@ class OandaClient:
             }
         return result
 
-    def place_market_order(self, instrument: str, units: int, stop_loss_price: float, take_profit_price: float) -> Dict[str, Any]:
+    def place_market_order(self, instrument: str, units: int, stop_loss_price: float, take_profit_price: float = 0.0, client_tag: Optional[str] = None) -> Dict[str, Any]:
         """
-        Place a MARKET order with attached Stop Loss and Take Profit.
-        units > 0 = BUY (Long)
-        units < 0 = SELL (Short)
+        Place a MARKET order with attached Stop Loss and optional Take Profit.
+        units > 0 = BUY (Long), units < 0 = SELL (Short).
+        Tags order with client_tag (e.g. APEX_SNIPER) for permanent isolation on OANDA.
         """
         endpoint = f"/accounts/{self.account_id}/orders"
         
-        # Determine precision based on instrument
-        precision = 3 if "JPY" in instrument else 5
+        # Determine precision based on instrument specs
+        _, _, precision = self.get_pip_specs(instrument)
         sl_str = f"{stop_loss_price:.{precision}f}"
-        tp_str = f"{take_profit_price:.{precision}f}"
 
-        order_payload = {
-            "order": {
-                "instrument": instrument,
-                "units": str(units),
-                "type": "MARKET",
-                "positionFill": "DEFAULT",
-                "timeInForce": "FOK", # Fill Or Kill
-                "stopLossOnFill": {
-                    "price": sl_str,
-                    "timeInForce": "GTC"
-                },
-                "takeProfitOnFill": {
-                    "price": tp_str,
-                    "timeInForce": "GTC"
-                }
+        order_data = {
+            "instrument": instrument,
+            "units": str(units),
+            "type": "MARKET",
+            "positionFill": "DEFAULT",
+            "timeInForce": "FOK", # Fill Or Kill
+            "stopLossOnFill": {
+                "price": sl_str,
+                "timeInForce": "GTC"
             }
         }
 
-        logger.info(f"Submitting MARKET Order: {instrument} Units={units} SL={sl_str} TP={tp_str}")
+        if take_profit_price is not None and take_profit_price > 0:
+            tp_str = f"{take_profit_price:.{precision}f}"
+            order_data["takeProfitOnFill"] = {
+                "price": tp_str,
+                "timeInForce": "GTC"
+            }
+            tp_display = tp_str
+        else:
+            tp_display = "None (Trailing ATR)"
+
+        if client_tag:
+            tag_id = f"{client_tag[:10]}_{int(time.time())}"
+            order_data["clientExtensions"] = {"id": tag_id, "tag": client_tag, "comment": client_tag}
+            order_data["tradeClientExtensions"] = {"id": tag_id, "tag": client_tag, "comment": client_tag}
+
+        order_payload = {"order": order_data}
+
+        logger.info(f"Submitting MARKET Order: {instrument} Units={units} SL={sl_str} TP={tp_display} Tag={client_tag}")
         res = self._request("POST", endpoint, data=order_payload)
         
         # Check if filled

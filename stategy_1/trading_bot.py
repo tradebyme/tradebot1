@@ -175,7 +175,7 @@ class TradingBot:
                         self.log("INFO", f"SIGNAL TRIGGERED on {inst}: {direction} @ {entry:.5f} | SL: {sl:.5f} | TP: {tp:.5f} | Units: {order_units}")
 
                         # Execute Order
-                        order_res = self.client.place_market_order(inst, order_units, sl, tp)
+                        order_res = self.client.place_market_order(inst, order_units, sl, tp, client_tag="STRAT_1")
                         if order_res.get("success"):
                             trade_id = order_res.get("trade_id")
                             fill_price = order_res.get("price")

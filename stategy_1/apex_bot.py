@@ -63,14 +63,25 @@ class ApexTradingBot:
             logger.error(message)
 
     def _seed_closed_trades(self):
-        """Record existing closed trades on startup so restarts never double-count."""
+        """Record existing closed trades and sync realized P&L from OANDA on startup."""
         try:
-            closed = self.client.get_closed_trades(count=40)
+            summary = self.client.get_account_summary()
+            acct = summary.get("account", {})
+            broker_pl = float(acct.get("resettablePL", 0.0))
+            broker_bal = float(acct.get("balance", self.risk_manager.virtual_capital))
+
+            # Auto-sync baseline if state was wiped by container restart
+            if self.risk_manager.state.get("total_trades_count", 0) == 0 and broker_pl != 0.0:
+                self.risk_manager.state["total_realized_pl"] = round(broker_pl, 2)
+                self.risk_manager._save_state(self.risk_manager.state)
+                self.log("INFO", f"Synced broker realized P&L on restart: ${broker_pl:.2f}")
+
+            closed = self.client.get_closed_trades(count=50)
             for t in closed:
                 tid = t.get("id")
                 if tid:
                     self.known_closed_trade_ids.add(tid)
-            self.log("INFO", f"Seeded {len(self.known_closed_trade_ids)} historical closed trade IDs from OANDA.")
+            self.log("INFO", f"Seeded {len(self.known_closed_trade_ids)} historical closed trade IDs from OANDA (Account: {self.client.account_id}).")
         except Exception as e:
             self.log("WARNING", f"Could not seed closed trades: {e}")
 
@@ -232,7 +243,8 @@ class ApexTradingBot:
                         instrument=inst,
                         units=units,
                         stop_loss_price=sl,
-                        take_profit_price=0.0  # Dynamic ATR trailing used instead of static TP
+                        take_profit_price=0.0,  # Dynamic ATR trailing used instead of static TP
+                        client_tag="APEX_SNIPER"
                     )
 
                     fill = order_res.get("orderFillTransaction") or order_res.get("raw", {}).get("orderFillTransaction", {})
