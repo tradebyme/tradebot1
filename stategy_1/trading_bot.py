@@ -10,6 +10,24 @@ from strategy import MomentumPullbackStrategy
 
 logger = logging.getLogger("TradingBot")
 
+def is_strat1_trade(trade: Dict[str, Any]) -> bool:
+    """Strictly isolate Strategy 1 trades from APEX SNIPER and other foreign bots."""
+    ce = trade.get("clientExtensions") or {}
+    tag = str(ce.get("tag", "")).upper()
+    comment = str(ce.get("comment", "")).upper()
+    ext_id = str(ce.get("id", "")).upper()
+
+    # Reject foreign bots from arena or apex sniper
+    foreign_keywords = ["APEX", "TITAN", "PHANTOM", "NEXUS", "PREDATOR", "AGENT_"]
+    if any(k in tag or k in comment or k in ext_id for k in foreign_keywords):
+        return False
+
+    inst = trade.get("instrument", "")
+    if inst not in Config.INSTRUMENTS:  # Strategy 1 only trades GBP_USD and EUR_USD
+        return False
+
+    return True
+
 class TradingBot:
     """Core Trading Bot Engine coordinating Market Data, Strategy, and Risk Management."""
 
@@ -51,7 +69,8 @@ class TradingBot:
         from OANDA broker history so that Render restarts never lose past challenge trades.
         """
         try:
-            closed = self.client.get_closed_trades(count=50)
+            raw_closed = self.client.get_closed_trades(count=60)
+            closed = [t for t in raw_closed if is_strat1_trade(t)]
             challenge_start = getattr(Config, "CHALLENGE_START_DATE", "2026-11-05")
             today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -119,7 +138,8 @@ class TradingBot:
     def sync_closed_trades(self):
         """Detect newly closed trades and update RiskManager PnL."""
         try:
-            recent_closed = self.client.get_closed_trades(count=15)
+            raw_closed = self.client.get_closed_trades(count=20)
+            recent_closed = [t for t in raw_closed if is_strat1_trade(t)]
             for trade in recent_closed:
                 trade_id = trade["id"]
                 if trade_id not in self.known_closed_trade_ids:
@@ -245,10 +265,12 @@ class TradingBot:
         return results
 
     def get_dashboard_data(self) -> Dict[str, Any]:
-        """Aggregate all live data required by the Web Dashboard UI."""
+        """Aggregate all live data required by the Web Dashboard UI (filtered strictly to Strategy 1)."""
         account = self.client.get_account_summary()
-        open_trades = self.client.get_open_trades()
-        closed_trades = self.client.get_closed_trades(count=20)
+        raw_open = self.client.get_open_trades()
+        open_trades = [t for t in raw_open if is_strat1_trade(t)]
+        raw_closed = self.client.get_closed_trades(count=30)
+        closed_trades = [t for t in raw_closed if is_strat1_trade(t)]
         
         open_unrealized_pl = sum(float(t.get("unrealizedPL", 0.0)) for t in open_trades)
         risk_summary = self.risk_manager.get_summary(open_unrealized_pl)

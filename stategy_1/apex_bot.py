@@ -12,6 +12,30 @@ from apex_strategy import ApexTrendEMAATRStrategy
 logger = logging.getLogger("ApexTradingBot")
 
 
+def is_apex_trade(trade: Dict[str, Any]) -> bool:
+    """Strictly isolate APEX SNIPER trades from Strategy 1 and retail arena bots."""
+    ce = trade.get("clientExtensions") or {}
+    tag = str(ce.get("tag", "")).upper()
+    comment = str(ce.get("comment", "")).upper()
+    ext_id = str(ce.get("id", "")).upper()
+
+    # Reject Strategy 1 and retail bots
+    if "STRAT_1" in tag or "STRAT_1" in comment or "STRAT_1" in ext_id:
+        return False
+    if any(k in tag or k in comment for k in ["TITAN", "PHANTOM", "NEXUS", "PREDATOR"]):
+        return False
+
+    # Accept if tagged APEX or if on apex instruments
+    if "APEX" in tag or "APEX" in comment or "APEX" in ext_id:
+        return True
+
+    inst = trade.get("instrument", "")
+    if inst == "XAU_USD":
+        return True
+
+    return False
+
+
 class ApexTradingBot:
     """
     APEX SNIPER / Strategy 5: Institutional Trend-ATR Portfolio Bot Engine.
@@ -76,12 +100,13 @@ class ApexTradingBot:
                 self.risk_manager._save_state(self.risk_manager.state)
                 self.log("INFO", f"Synced broker realized P&L on restart: ${broker_pl:.2f}")
 
-            closed = self.client.get_closed_trades(count=50)
+            raw_closed = self.client.get_closed_trades(count=50)
+            closed = [t for t in raw_closed if is_apex_trade(t)]
             for t in closed:
                 tid = t.get("id")
                 if tid:
                     self.known_closed_trade_ids.add(tid)
-            self.log("INFO", f"Seeded {len(self.known_closed_trade_ids)} historical closed trade IDs from OANDA (Account: {self.client.account_id}).")
+            self.log("INFO", f"Seeded {len(self.known_closed_trade_ids)} historical APEX trades from OANDA (Account: {self.client.account_id}).")
         except Exception as e:
             self.log("WARNING", f"Could not seed closed trades: {e}")
 
@@ -113,7 +138,8 @@ class ApexTradingBot:
     def _check_closed_trades(self):
         """Detect any newly closed trades and update risk manager."""
         try:
-            recent_closed = self.client.get_closed_trades(count=20)
+            raw_closed = self.client.get_closed_trades(count=20)
+            recent_closed = [t for t in raw_closed if is_apex_trade(t)]
             for t in recent_closed:
                 tid = t.get("id")
                 if tid and tid not in self.known_closed_trade_ids:
@@ -267,13 +293,20 @@ class ApexTradingBot:
             self.log("ERROR", f"Error scanning signals in APEX engine: {e}")
 
     def get_dashboard_data(self) -> Dict[str, Any]:
-        """Aggregate real-time metrics for the APEX SNIPER dashboard."""
+        """Aggregate real-time metrics for the APEX SNIPER dashboard (isolated to APEX)."""
         try:
-            open_trades = self.client.get_open_trades()
+            raw_open = self.client.get_open_trades()
+            open_trades = [t for t in raw_open if is_apex_trade(t)]
             floating_pl = sum(float(t.get("unrealizedPL", 0.0)) for t in open_trades)
         except Exception:
             open_trades = []
             floating_pl = 0.0
+
+        try:
+            raw_closed = self.client.get_closed_trades(count=30)
+            closed_trades = [t for t in raw_closed if is_apex_trade(t)]
+        except Exception:
+            closed_trades = []
 
         metrics = self.risk_manager.get_dashboard_metrics(floating_pl)
 
@@ -283,6 +316,7 @@ class ApexTradingBot:
         return {
             "metrics": metrics,
             "open_trades": open_trades,
+            "closed_trades": closed_trades,
             "logs": logs,
             "is_running": (self.risk_manager.state.get("status") == "ACTIVE"),
             "timestamp": datetime.now(timezone.utc).isoformat()
