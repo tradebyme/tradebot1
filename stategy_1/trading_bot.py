@@ -67,71 +67,96 @@ class TradingBot:
         """
         Record existing closed trades on startup and synchronize challenge performance directly
         from OANDA broker history so that Render restarts never lose past challenge trades.
+        Accurately partitions OANDA history into Archived Past Attempts vs Current Active Attempt.
         """
         try:
             raw_closed = self.client.get_closed_trades(count=500)
             closed = [t for t in raw_closed if is_strat1_trade(t)]
-            challenge_start = getattr(Config, "CHALLENGE_START_DATE", "2026-11-05")
+            env_start = getattr(Config, "CHALLENGE_START_DATE", "").strip()
+            state_start = (self.risk_manager.state.get("challenge_start_date") or "").strip()
+            if env_start and state_start:
+                challenge_start = max(env_start, state_start)
+            else:
+                challenge_start = env_start or state_start or "2026-11-24T15:00:00Z"
             today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            target_capital = float(getattr(Config, "VIRTUAL_CAPITAL", 2000.0))
 
-            # Check if RiskManager needs historical synchronization (e.g. fresh Render container or updated config)
-            saved_count = self.risk_manager.state.get("total_trades_count", 0)
-            saved_capital = float(self.risk_manager.state.get("virtual_capital", 0.0))
-            target_capital = float(getattr(Config, "VIRTUAL_CAPITAL", 5000.0))
-            needs_sync = (saved_count != len(closed)) or (saved_capital != target_capital)
+            sorted_closed = sorted(closed, key=lambda x: x.get("closeTime", ""))
 
-            if needs_sync and closed:
-                self.log("INFO", f"Synchronizing challenge trades from OANDA broker history (since {challenge_start})...")
-                total_pl = 0.0
-                total_trades = 0
-                total_wins = 0
-                total_losses = 0
-                daily_pl = 0.0
-                daily_trades = 0
-                daily_losses = 0
-                running_equity = target_capital
-                equity_history = [
-                    {"time": f"{challenge_start}T00:00:00+00:00", "equity": running_equity}
-                ]
+            # 1. Archive Past Attempts (trades before current challenge start)
+            past_trades = [t for t in sorted_closed if (t.get("closeTime") or "") < challenge_start]
+            if past_trades and (not self.risk_manager.state.get("archived_attempts") or self.risk_manager.state.get("challenge_start_date") != challenge_start):
+                past_pl = sum(float(t.get("realizedPL", 0.0)) for t in past_trades)
+                past_wins = sum(1 for t in past_trades if float(t.get("realizedPL", 0.0)) > 0)
+                past_losses = len(past_trades) - past_wins
+                first_date = past_trades[0].get("closeTime", "")[:10]
+                last_date = past_trades[-1].get("closeTime", "")[:10]
+                status_str = "FAILED" if past_pl <= -(target_capital * 0.08) else ("PASSED" if past_pl >= (target_capital * 0.08) else "COMPLETED")
+                reason_str = "Max total drawdown limit (-8% / -$160) breached." if status_str == "FAILED" else ("Profit target (+8% / +$160) achieved." if status_str == "PASSED" else "Closed manually.")
+                self.risk_manager.state["archived_attempts"] = [{
+                    "attempt_number": 1,
+                    "start_date": first_date,
+                    "end_date": last_date,
+                    "virtual_capital": target_capital,
+                    "total_trades": len(past_trades),
+                    "total_wins": past_wins,
+                    "total_losses": past_losses,
+                    "win_rate": round((past_wins / len(past_trades)) * 100.0, 1),
+                    "realized_pl": round(past_pl, 2),
+                    "status": status_str,
+                    "reason": reason_str
+                }]
 
-                # Process trades in chronological order (oldest to newest)
-                sorted_closed = sorted(closed, key=lambda x: x.get("closeTime", ""))
+            # 2. Synchronize Current Active Attempt
+            current_trades = [t for t in sorted_closed if (t.get("closeTime") or "") >= challenge_start]
+            total_pl = sum(float(t.get("realizedPL", 0.0)) for t in current_trades)
+            total_trades = len(current_trades)
+            total_wins = sum(1 for t in current_trades if float(t.get("realizedPL", 0.0)) > 0)
+            total_losses = total_trades - total_wins
 
-                for trade in sorted_closed:
-                    close_time = trade.get("closeTime", "")
-                    if close_time >= challenge_start:
-                        pl = float(trade.get("realizedPL", 0.0))
-                        trade_date = close_time[:10]
-                        total_pl += pl
-                        total_trades += 1
-                        if pl > 0:
-                            total_wins += 1
-                        elif pl < 0:
-                            total_losses += 1
+            daily_trades = [t for t in current_trades if (t.get("closeTime") or "")[:10] == today_utc]
+            daily_pl = sum(float(t.get("realizedPL", 0.0)) for t in daily_trades)
+            daily_losses = sum(1 for t in daily_trades if float(t.get("realizedPL", 0.0)) < 0)
 
-                        running_equity += pl
-                        equity_history.append({"time": close_time, "equity": round(running_equity, 2)})
+            running_equity = target_capital + total_pl
+            equity_history = [
+                {"time": f"{challenge_start}", "equity": target_capital}
+            ]
+            temp_eq = target_capital
+            for ct in current_trades:
+                temp_eq += float(ct.get("realizedPL", 0.0))
+                equity_history.append({"time": ct.get("closeTime", ""), "equity": round(temp_eq, 2)})
 
-                        # Only attribute to daily PnL if closed today
-                        if trade_date == today_utc:
-                            daily_pl += pl
-                            daily_trades += 1
-                            if pl < 0:
-                                daily_losses += 1
+            curr_attempt_num = len(self.risk_manager.state.get("archived_attempts", [])) + 1
+            self.risk_manager.state["virtual_capital"] = target_capital
+            self.risk_manager.state["challenge_start_date"] = challenge_start
+            self.risk_manager.state["current_attempt_number"] = curr_attempt_num
+            self.risk_manager.state["starting_balance_today"] = round(running_equity - daily_pl, 4)
+            self.risk_manager.state["total_realized_pl"] = round(total_pl, 4)
+            self.risk_manager.state["total_trades_count"] = total_trades
+            self.risk_manager.state["total_wins"] = total_wins
+            self.risk_manager.state["total_losses"] = total_losses
+            self.risk_manager.state["daily_realized_pl"] = round(daily_pl, 4)
+            self.risk_manager.state["daily_trades_count"] = len(daily_trades)
+            self.risk_manager.state["daily_losses_count"] = daily_losses
+            self.risk_manager.state["equity_history"] = equity_history
 
-                self.risk_manager.state["virtual_capital"] = target_capital
-                self.risk_manager.state["challenge_start_date"] = challenge_start
-                self.risk_manager.state["starting_balance_today"] = round(running_equity - daily_pl, 4)
-                self.risk_manager.state["total_realized_pl"] = round(total_pl, 4)
-                self.risk_manager.state["total_trades_count"] = total_trades
-                self.risk_manager.state["total_wins"] = total_wins
-                self.risk_manager.state["total_losses"] = total_losses
-                self.risk_manager.state["daily_realized_pl"] = round(daily_pl, 4)
-                self.risk_manager.state["daily_trades_count"] = daily_trades
-                self.risk_manager.state["daily_losses_count"] = daily_losses
-                self.risk_manager.state["equity_history"] = equity_history
-                self.risk_manager._save_state()
-                self.log("INFO", f"Broker Sync Complete: {total_trades} challenge trades loaded. Total Realized PnL: ${total_pl:+.2f}")
+            # Determine live status for current active challenge
+            max_dd_limit = target_capital * (float(getattr(Config, "MAX_DRAWDOWN_PCT", 8.0)) / 100.0)
+            target_limit = target_capital * (float(getattr(Config, "TARGET_PROFIT_PCT", 8.0)) / 100.0)
+
+            if -total_pl >= max_dd_limit:
+                self.risk_manager.state["status"] = "MAX_DRAWDOWN_HIT"
+                self.risk_manager.state["status_message"] = f"MAX DRAWDOWN HIT: Loss is ${abs(total_pl):.2f}. Challenge failed."
+            elif total_pl >= target_limit:
+                self.risk_manager.state["status"] = "TARGET_HIT"
+                self.risk_manager.state["status_message"] = f"TARGET HIT: Profit is +${total_pl:.2f}! Challenge passed."
+            else:
+                self.risk_manager.state["status"] = "ACTIVE"
+                self.risk_manager.state["status_message"] = f"Challenge Attempt #{curr_attempt_num} ACTIVE. Monitoring H1/M15 trend."
+
+            self.risk_manager._save_state()
+            self.log("INFO", f"Broker Sync Complete: {total_trades} active challenge trades loaded (Attempt #{curr_attempt_num}). Total Realized PnL: ${total_pl:+.2f}")
 
             # Register all closed trade IDs so we don't double count
             for t in closed:
@@ -184,7 +209,8 @@ class TradingBot:
                 for inst in Config.INSTRUMENTS:
                     inst_pricing = pricing.get(inst, {})
                     candles = self.client.get_candles(inst, granularity=Config.TIMEFRAME, count=120)
-                    analysis = self.strategy.analyze(inst, candles, inst_pricing)
+                    candles_h1 = self.client.get_candles(inst, granularity="H1", count=60)
+                    analysis = self.strategy.analyze(inst, candles, inst_pricing, h1_candles=candles_h1)
                     analysis_results.append(analysis)
 
                     if analysis.get("has_signal"):

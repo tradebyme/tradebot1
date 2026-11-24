@@ -258,6 +258,11 @@ class RiskManager:
         tot_losses = self.state.get("total_losses", 0)
         win_rate_pct = round((tot_wins / tot_trades) * 100.0, 1) if tot_trades > 0 else 0.0
 
+        archived_attempts = self.state.get("archived_attempts", [])
+        current_attempt_num = self.state.get("current_attempt_number", len(archived_attempts) + 1)
+        failed_count = sum(1 for a in archived_attempts if a.get("status") in ("MAX_DRAWDOWN_HIT", "FAILED"))
+        passed_count = sum(1 for a in archived_attempts if a.get("status") in ("TARGET_HIT", "PASSED"))
+
         return {
             "virtual_capital": self.virtual_capital,
             "current_equity": round(current_equity, 2),
@@ -298,7 +303,13 @@ class RiskManager:
             "status": self.state.get("status", "ACTIVE"),
             "status_message": self.state.get("status_message", ""),
             "current_day_utc": self.state.get("current_day_utc", ""),
-            "equity_history": self.state.get("equity_history", [])[-50:]
+            "equity_history": self.state.get("equity_history", [])[-50:],
+            # Multi-Attempt Prop Challenge Tracking (Render-Resilient)
+            "archived_attempts": archived_attempts,
+            "current_attempt_number": current_attempt_num,
+            "failed_attempts_count": failed_count,
+            "passed_attempts_count": passed_count,
+            "total_attempts": len(archived_attempts) + 1
         }
 
     def set_pause(self, paused: bool):
@@ -312,7 +323,49 @@ class RiskManager:
         self._save_state()
 
     def reset_challenge(self):
-        """Reset challenge starting state."""
-        self.state = self._default_state()
+        """Archive current attempt and reset challenge starting state to fresh attempt."""
+        archived = list(self.state.get("archived_attempts", []))
+        tot_trades = self.state.get("total_trades_count", 0)
+
+        # Archive current attempt if it had trades
+        if tot_trades > 0:
+            archived.append({
+                "attempt_number": len(archived) + 1,
+                "start_date": self.state.get("challenge_start_date", ""),
+                "end_date": datetime.now(timezone.utc).isoformat()[:16].replace("T", " "),
+                "virtual_capital": self.virtual_capital,
+                "total_trades": tot_trades,
+                "total_wins": self.state.get("total_wins", 0),
+                "total_losses": self.state.get("total_losses", 0),
+                "win_rate": round((self.state.get("total_wins", 0) / tot_trades) * 100.0, 1),
+                "realized_pl": round(self.state.get("total_realized_pl", 0.0), 2),
+                "status": self.state.get("status", "FAILED"),
+                "reason": self.state.get("status_message", "Challenge Reset")
+            })
+
+        today = self._get_current_utc_date()
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        self.state = {
+            "challenge_start_date": now_iso,
+            "current_attempt_number": len(archived) + 1,
+            "current_day_utc": today,
+            "virtual_capital": self.virtual_capital,
+            "starting_balance_today": self.virtual_capital,
+            "daily_realized_pl": 0.0,
+            "daily_trades_count": 0,
+            "daily_losses_count": 0,
+            "total_realized_pl": 0.0,
+            "total_trades_count": 0,
+            "total_wins": 0,
+            "total_losses": 0,
+            "status": "ACTIVE",
+            "status_message": f"Challenge Attempt #{len(archived) + 1} started. Bot active and monitoring H1/M15 trend.",
+            "equity_history": [
+                {"time": now_iso, "equity": self.virtual_capital}
+            ],
+            "archived_attempts": archived,
+            "last_update": now_iso
+        }
         self._save_state()
-        logger.info("Challenge state reset to fresh defaults.")
+        logger.info(f"Challenge reset. Starting fresh Attempt #{len(archived) + 1} with ${self.virtual_capital:,.2f} baseline.")

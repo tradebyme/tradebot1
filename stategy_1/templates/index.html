@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OANDA Forex Engine | $5k Prop Challenge Terminal</title>
+    <title>OANDA Forex Engine | Prop Firm Challenge Terminal</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -127,8 +127,8 @@
                             ACTIVE & MONITORING
                         </span>
                     </div>
-                    <p class="text-xs text-gray-400 mt-0.5 truncate">
-                        $5,000 Challenge &bull; London/NY M15 Momentum Pullback &bull; 1:2 R:R
+                    <p id="challenge-header-subtitle" class="text-xs text-gray-400 mt-0.5 truncate">
+                        $2,000 Challenge (Attempt #2) &bull; London/NY H1/M15 Momentum Pullback &bull; 1:1.2 R:R
                     </p>
                 </div>
             </div>
@@ -183,7 +183,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Target Goal (+8.0%)</span>
-                            <span class="px-2 py-0.2 text-[10px] rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Target: +$400.00</span>
+                            <span id="target-pill-badge" class="px-2 py-0.2 text-[10px] rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Target: +$160.00</span>
                         </div>
                         <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="target-profit-val">+$0.00 (+0.0%)</div>
                     </div>
@@ -209,7 +209,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">Max Drawdown Shield (-8.0%)</span>
-                            <span class="px-2 py-0.2 text-[10px] rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">Limit: -$400.00</span>
+                            <span id="drawdown-pill-badge" class="px-2 py-0.2 text-[10px] rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">Limit: -$160.00</span>
                         </div>
                         <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="total-loss-val">-$0.00 (-0.0%)</div>
                     </div>
@@ -260,7 +260,7 @@
                     <span>Win Rate: <span id="win-rate-text" class="text-emerald-400 font-semibold font-mono">0.0%</span></span>
                     <span id="total-net-pl" class="font-mono text-gray-300 font-semibold">$0.00 net</span>
                 </div>
-                <div class="text-[10px] text-gray-500 mt-1">Base: $5,000 &bull; Floor: $4,600</div>
+                <div class="text-[10px] text-gray-500 mt-1" id="base-floor-info">Base: $2,000 &bull; Floor: $1,840</div>
             </div>
 
             <!-- TILE 3: OANDA BROKER NAV -->
@@ -396,11 +396,11 @@
         <div class="glass-panel-elevated rounded-2xl p-4 sm:p-5 shadow-xl">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
                 <div>
-                    <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2" id="equity-chart-title">
                         <i class="fa-solid fa-chart-area text-blue-400"></i>
-                        Challenge Equity Trajectory ($5,000 Baseline)
+                        Challenge Equity Trajectory ($2,000 Baseline)
                     </h2>
-                    <p class="text-[11px] text-gray-400">Target Line: $5,400 (+8%) &bull; Max Drawdown Floor: $4,600 (-8%)</p>
+                    <p class="text-[11px] text-gray-400" id="equity-chart-sub">Target Line: $2,160 (+8%) &bull; Max Drawdown Floor: $1,840 (-8%)</p>
                 </div>
                 <button onclick="resetChallenge()" class="text-xs text-gray-500 hover:text-rose-400 transition underline">
                     Reset Baseline
@@ -425,6 +425,9 @@
                             </button>
                             <button id="tab-btn-orders" onclick="switchHistoryTab('orders')" class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-list-check text-blue-400"></i> Orders & Executions (<span id="total-orders-summary">0</span>)
+                            </button>
+                            <button id="tab-btn-attempts" onclick="switchHistoryTab('attempts')" class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-award text-amber-400"></i> Challenge Attempts (<span id="total-attempts-summary">1</span>)
                             </button>
                         </div>
                     </div>
@@ -488,6 +491,48 @@
                         <!-- Mobile Cards List -->
                         <div id="orders-mobile-cards" class="sm:hidden space-y-2.5 max-h-72 overflow-y-auto">
                             <div class="py-6 text-center text-gray-500 text-xs">No orders recorded yet.</div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: CHALLENGE ATTEMPTS ARCHIVE (RENDER-RESILIENT) -->
+                    <div id="history-tab-attempts" class="hidden">
+                        <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
+                            <div class="p-2.5 rounded-xl bg-gray-950/80 border border-gray-800">
+                                <div class="text-[10px] text-gray-400 uppercase font-semibold">Total Attempts</div>
+                                <div id="attempts-total-count" class="text-base sm:text-lg font-bold text-white mono">1</div>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-rose-950/30 border border-rose-800/40">
+                                <div class="text-[10px] text-rose-400 uppercase font-semibold">Blown (Failed)</div>
+                                <div id="attempts-failed-count" class="text-base sm:text-lg font-bold text-rose-400 mono">0</div>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-800/40">
+                                <div class="text-[10px] text-emerald-400 uppercase font-semibold">Passed (Funded)</div>
+                                <div id="attempts-passed-count" class="text-base sm:text-lg font-bold text-emerald-400 mono">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Attempts Desktop Table -->
+                        <div class="hidden sm:block overflow-x-auto max-h-72">
+                            <table class="w-full text-left text-xs text-gray-400">
+                                <thead class="text-gray-500 uppercase border-b border-gray-800 bg-gray-950/60 sticky top-0">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Attempt #</th>
+                                        <th class="py-2.5 px-3">Period</th>
+                                        <th class="py-2.5 px-3">Trades (W/L)</th>
+                                        <th class="py-2.5 px-3">Win Rate</th>
+                                        <th class="py-2.5 px-3">Realized PnL</th>
+                                        <th class="py-2.5 px-3 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attempts-tbody" class="divide-y divide-gray-800/60 font-mono">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Attempts Mobile Cards List -->
+                        <div id="attempts-mobile-cards" class="sm:hidden space-y-2 max-h-72 overflow-y-auto">
+                            <!-- Populated dynamically -->
                         </div>
                     </div>
                 </div>
@@ -1000,6 +1045,109 @@
                 }
             }
 
+            // 4.1 Challenge Attempts History (Render-Resilient Archiver)
+            const attemptsTotal = risk.total_attempts || 1;
+            const attemptsSummaryEl = document.getElementById('total-attempts-summary');
+            if (attemptsSummaryEl) attemptsSummaryEl.innerText = `${attemptsTotal}`;
+            const attemptsTotalEl = document.getElementById('attempts-total-count');
+            if (attemptsTotalEl) attemptsTotalEl.innerText = `${attemptsTotal}`;
+            const attemptsFailedEl = document.getElementById('attempts-failed-count');
+            if (attemptsFailedEl) attemptsFailedEl.innerText = `${risk.failed_attempts_count || 0}`;
+            const attemptsPassedEl = document.getElementById('attempts-passed-count');
+            if (attemptsPassedEl) attemptsPassedEl.innerText = `${risk.passed_attempts_count || 0}`;
+
+            const attemptsTbody = document.getElementById('attempts-tbody');
+            const attemptsMobileCards = document.getElementById('attempts-mobile-cards');
+            if (attemptsTbody) {
+                let attemptsRows = [];
+                let attemptsCards = [];
+
+                // A. Current Active Attempt
+                const currNum = risk.current_attempt_number || 1;
+                const currTrades = risk.total_trades_count || 0;
+                const currWins = risk.total_wins || 0;
+                const currLosses = risk.total_losses || 0;
+                const currWR = risk.win_rate_pct || 0.0;
+                const currPl = risk.total_pl || 0.0;
+                const currStatus = risk.status || 'ACTIVE';
+                const isFailed = (currStatus === 'MAX_DRAWDOWN_HIT');
+                const isPassed = (currStatus === 'TARGET_HIT');
+                const currBadge = isPassed
+                    ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">PASSED</span>'
+                    : isFailed
+                    ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">FAILED (Hit 8% DD)</span>'
+                    : '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ACTIVE</span>';
+
+                const currStart = risk.challenge_start_date ? risk.challenge_start_date.substring(0, 10) : 'Now';
+
+                attemptsRows.push(`
+                    <tr class="bg-blue-950/20 hover:bg-blue-900/30 transition">
+                        <td class="py-2.5 px-3 text-white font-bold">
+                            Attempt #${currNum} <span class="text-[10px] text-blue-400 font-normal">(Current)</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-300 text-xs">${currStart} &rarr; Active</td>
+                        <td class="py-2.5 px-3 text-gray-300">${currTrades} (${currWins}W / ${currLosses}L)</td>
+                        <td class="py-2.5 px-3 text-gray-300">${currWR}%</td>
+                        <td class="py-2.5 px-3 font-bold ${currPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                            ${currPl >= 0 ? '+' : ''}$${currPl.toFixed(2)}
+                        </td>
+                        <td class="py-2.5 px-3 text-right">${currBadge}</td>
+                    </tr>
+                `);
+
+                attemptsCards.push(`
+                    <div class="glass-panel rounded-xl p-3 border border-blue-500/30 bg-blue-950/20">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold text-white text-xs mono">Attempt #${currNum} (Current)</span>
+                            ${currBadge}
+                        </div>
+                        <div class="text-[11px] text-gray-300 flex justify-between">
+                            <span>Trades: ${currTrades} (${currWins}W/${currLosses}L)</span>
+                            <span class="font-bold ${currPl >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${currPl >= 0 ? '+' : ''}$${currPl.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `);
+
+                // B. Archived Past Attempts
+                const archived = risk.archived_attempts || [];
+                archived.forEach(a => {
+                    const aPl = parseFloat(a.realized_pl || 0);
+                    const aStatus = a.status || 'FAILED';
+                    const aBadge = aStatus === 'PASSED'
+                        ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">PASSED</span>'
+                        : '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">FAILED (Hit 8% DD)</span>';
+
+                    attemptsRows.push(`
+                        <tr class="hover:bg-gray-800/40 transition">
+                            <td class="py-2.5 px-3 text-gray-400 font-semibold">Attempt #${a.attempt_number}</td>
+                            <td class="py-2.5 px-3 text-gray-400 text-xs">${a.start_date} &rarr; ${a.end_date}</td>
+                            <td class="py-2.5 px-3 text-gray-400">${a.total_trades} (${a.total_wins}W / ${a.total_losses}L)</td>
+                            <td class="py-2.5 px-3 text-gray-400">${a.win_rate}%</td>
+                            <td class="py-2.5 px-3 font-bold text-rose-400">-$${Math.abs(aPl).toFixed(2)}</td>
+                            <td class="py-2.5 px-3 text-right">${aBadge}</td>
+                        </tr>
+                    `);
+
+                    attemptsCards.push(`
+                        <div class="glass-panel rounded-xl p-3 border border-gray-800">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-bold text-gray-300 text-xs mono">Attempt #${a.attempt_number}</span>
+                                ${aBadge}
+                            </div>
+                            <div class="text-[11px] text-gray-400 flex justify-between">
+                                <span>${a.start_date} &rarr; ${a.end_date} &bull; ${a.total_trades} tr</span>
+                                <span class="font-bold text-rose-400">-$${Math.abs(aPl).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `);
+                });
+
+                attemptsTbody.innerHTML = attemptsRows.join('');
+                if (attemptsMobileCards) {
+                    attemptsMobileCards.innerHTML = attemptsCards.join('');
+                }
+            }
+
             // 5. Terminal Logs Feed
             const term = document.getElementById('terminal-feed');
             if (logs.length > 0) {
@@ -1032,23 +1180,32 @@
             syncChartWithTrade(openTrades);
         }
 
-        // Tab Switcher for History Card (Closed Trades vs Orders)
+        // Tab Switcher for History Card (Closed Trades vs Orders vs Challenge Attempts)
         function switchHistoryTab(tab) {
             const tabTrades = document.getElementById('history-tab-trades');
             const tabOrders = document.getElementById('history-tab-orders');
+            const tabAttempts = document.getElementById('history-tab-attempts');
             const btnTrades = document.getElementById('tab-btn-trades');
             const btnOrders = document.getElementById('tab-btn-orders');
+            const btnAttempts = document.getElementById('tab-btn-attempts');
+
+            tabTrades.classList.add('hidden');
+            tabOrders.classList.add('hidden');
+            if (tabAttempts) tabAttempts.classList.add('hidden');
+
+            btnTrades.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition";
+            btnOrders.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition";
+            if (btnAttempts) btnAttempts.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition";
 
             if (tab === 'trades') {
                 tabTrades.classList.remove('hidden');
-                tabOrders.classList.add('hidden');
                 btnTrades.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-white border-b-2 border-indigo-500 pb-1 flex items-center gap-1.5 transition";
-                btnOrders.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition";
-            } else {
-                tabTrades.classList.add('hidden');
+            } else if (tab === 'orders') {
                 tabOrders.classList.remove('hidden');
                 btnOrders.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-white border-b-2 border-blue-500 pb-1 flex items-center gap-1.5 transition";
-                btnTrades.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition";
+            } else if (tab === 'attempts') {
+                if (tabAttempts) tabAttempts.classList.remove('hidden');
+                if (btnAttempts) btnAttempts.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-white border-b-2 border-amber-500 pb-1 flex items-center gap-1.5 transition";
             }
         }
 
@@ -1183,7 +1340,7 @@
 
         // Action: Reset Challenge
         async function resetChallenge() {
-            if (!confirm("Reset challenge tracking to initial $5,000 baseline?")) return;
+            if (!confirm("⚠️ START NEW PROP CHALLENGE ATTEMPT?\n\nThe current attempt will be permanently archived into Challenge Attempts History, and a fresh $2,000 baseline will begin immediately.")) return;
             try {
                 await fetch(API_BASE + '/api/bot/reset_challenge', { method: 'POST' });
                 fetchDashboard();
