@@ -123,12 +123,29 @@ class OandaClient:
         data = self._request("GET", endpoint)
         return data.get("positions", [])
 
-    def get_closed_trades(self, count: int = 50) -> List[Dict[str, Any]]:
+    def get_closed_trades(self, count: int = 500) -> List[Dict[str, Any]]:
         """Fetch recently closed trades history."""
         endpoint = f"/accounts/{self.account_id}/trades"
-        params = {"state": "CLOSED", "count": count}
+        params = {"state": "CLOSED", "count": min(count, 500)}
         data = self._request("GET", endpoint, params=params)
         return data.get("trades", [])
+
+    def get_orders(self, state: str = "ALL", count: int = 500) -> List[Dict[str, Any]]:
+        """Fetch historical and pending orders from OANDA (state: PENDING, FILLED, TRIGGERED, CANCELLED, ALL)."""
+        endpoint = f"/accounts/{self.account_id}/orders"
+        params = {"state": state, "count": min(count, 500)}
+        data = self._request("GET", endpoint, params=params)
+        return data.get("orders", [])
+
+    def get_transactions(self, count: int = 100) -> List[Dict[str, Any]]:
+        """Fetch recent ledger transactions (ORDER_FILL, ORDER_CANCEL, etc.)."""
+        summary = self.get_account_summary()
+        last_id = int(summary.get("lastTransactionID", 1))
+        from_id = max(1, last_id - count)
+        endpoint = f"/accounts/{self.account_id}/transactions/idrange"
+        params = {"from": from_id, "to": last_id}
+        data = self._request("GET", endpoint, params=params)
+        return data.get("transactions", [])
 
     @staticmethod
     def get_pip_specs(instrument: str):

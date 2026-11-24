@@ -69,7 +69,7 @@ class TradingBot:
         from OANDA broker history so that Render restarts never lose past challenge trades.
         """
         try:
-            raw_closed = self.client.get_closed_trades(count=60)
+            raw_closed = self.client.get_closed_trades(count=500)
             closed = [t for t in raw_closed if is_strat1_trade(t)]
             challenge_start = getattr(Config, "CHALLENGE_START_DATE", "2026-11-05")
             today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -274,8 +274,51 @@ class TradingBot:
         account = self.client.get_account_summary()
         raw_open = self.client.get_open_trades()
         open_trades = [t for t in raw_open if is_strat1_trade(t)]
-        raw_closed = self.client.get_closed_trades(count=30)
+        raw_closed = self.client.get_closed_trades(count=500)
         closed_trades = [t for t in raw_closed if is_strat1_trade(t)]
+        
+        # Build trade instrument lookup map
+        trade_map = {}
+        for t in raw_open:
+            if t.get("id"):
+                trade_map[str(t["id"])] = t.get("instrument", "")
+        for t in raw_closed:
+            if t.get("id"):
+                trade_map[str(t["id"])] = t.get("instrument", "")
+
+        # Fetch and enrich orders history
+        try:
+            raw_orders = self.client.get_orders(state="ALL", count=500)
+        except Exception:
+            raw_orders = []
+
+        enriched_orders = []
+        for o in raw_orders:
+            trade_id = str(o.get("tradeID") or o.get("tradeOpenedID") or "")
+            inst = o.get("instrument") or trade_map.get(trade_id, "")
+            # Strategy 1 trades GBP_USD and EUR_USD; if instrument known, keep to Strategy 1
+            if inst and inst not in ("GBP_USD", "EUR_USD"):
+                continue
+
+            o_type = o.get("type", "")
+            o_state = o.get("state", "")
+            units = int(o.get("units", 0)) if o.get("units") else 0
+            price = float(o.get("price", 0.0)) if o.get("price") else 0.0
+            create_time = o.get("createTime", "")
+            filled_time = o.get("filledTime") or o.get("cancelledTime") or ""
+
+            enriched_orders.append({
+                "id": o.get("id"),
+                "type": o_type,
+                "instrument": inst,
+                "trade_id": trade_id,
+                "units": units,
+                "price": price,
+                "state": o_state,
+                "create_time": create_time,
+                "filled_time": filled_time,
+                "time_in_force": o.get("timeInForce", "")
+            })
         
         open_unrealized_pl = sum(float(t.get("unrealizedPL", 0.0)) for t in open_trades)
         risk_summary = self.risk_manager.get_summary(open_unrealized_pl)
@@ -353,6 +396,7 @@ class TradingBot:
             "risk": risk_summary,
             "open_trades": enriched_open_trades,
             "closed_trades": enriched_closed_trades,
+            "orders": enriched_orders,
             "market_status": {
                 "market_open": market_open,
                 "market_msg": market_msg,

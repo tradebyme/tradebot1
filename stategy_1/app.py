@@ -134,6 +134,7 @@ def apex_reset():
     return jsonify({"success": True, "message": "APEX SNIPER challenge reset successfully."})
 
 @app.route("/api/status")
+@app.route("/strategy1/api/status")
 def get_status():
     """API endpoint consumed by the web dashboard frontend."""
     try:
@@ -143,7 +144,19 @@ def get_status():
         logger.error(f"Error fetching dashboard status: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/orders")
+@app.route("/strategy1/api/orders")
+def get_orders():
+    """API endpoint returning full execution and orders ledger from OANDA broker."""
+    try:
+        raw_orders = bot.client.get_orders(state="ALL", count=500)
+        return jsonify({"orders": raw_orders, "total_count": len(raw_orders)}), 200
+    except Exception as e:
+        logger.error(f"Error fetching orders: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/bot/toggle_pause", methods=["POST"])
+@app.route("/strategy1/api/bot/toggle_pause", methods=["POST"])
 def toggle_pause():
     """Toggle Pause / Resume state of the trading bot."""
     current_status = bot.risk_manager.state.get("status")
@@ -158,6 +171,7 @@ def toggle_pause():
     return jsonify({"success": True, "message": msg, "status": bot.risk_manager.state.get("status")})
 
 @app.route("/api/bot/scan", methods=["POST"])
+@app.route("/strategy1/api/bot/scan", methods=["POST"])
 def force_scan():
     """Force an immediate market scan."""
     bot.log("INFO", "Manual scan triggered from web dashboard.")
@@ -165,12 +179,14 @@ def force_scan():
     return jsonify({"success": True, "result": res})
 
 @app.route("/api/bot/close_all", methods=["POST"])
+@app.route("/strategy1/api/bot/close_all", methods=["POST"])
 def close_all():
     """Emergency close all open trades."""
     results = bot.emergency_close_all()
     return jsonify({"success": True, "results": results})
 
 @app.route("/api/bot/close_trade/<trade_id>", methods=["POST"])
+@app.route("/strategy1/api/bot/close_trade/<trade_id>", methods=["POST"])
 def close_single_trade(trade_id):
     """Close a specific open trade."""
     try:
@@ -181,6 +197,7 @@ def close_single_trade(trade_id):
         return jsonify({"success": False, "error": str(e)}), 400
 
 @app.route("/api/bot/reset_challenge", methods=["POST"])
+@app.route("/strategy1/api/bot/reset_challenge", methods=["POST"])
 def reset_challenge():
     """Reset the 3-day challenge state."""
     bot.risk_manager.reset_challenge()

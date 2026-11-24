@@ -414,43 +414,81 @@
         <!-- TRADE HISTORY & TERMINAL LOGS GRID -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
-            <!-- CLOSED TRADES HISTORY -->
+            <!-- CLOSED TRADES & ORDERS HISTORY TABS -->
             <div class="glass-panel rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between mb-3.5">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
-                            <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Closed Trades History</h2>
+                    <!-- Tab Header Navigation -->
+                    <div class="flex items-center justify-between mb-3.5 border-b border-gray-800 pb-2">
+                        <div class="flex items-center gap-3 sm:gap-5">
+                            <button id="tab-btn-trades" onclick="switchHistoryTab('trades')" class="text-xs sm:text-sm font-bold uppercase tracking-wider text-white border-b-2 border-indigo-500 pb-1 flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i> Closed Trades (<span id="total-trades-summary">0</span>)
+                            </button>
+                            <button id="tab-btn-orders" onclick="switchHistoryTab('orders')" class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-list-check text-blue-400"></i> Orders & Executions (<span id="total-orders-summary">0</span>)
+                            </button>
                         </div>
-                        <span class="text-xs text-gray-400 font-mono" id="total-trades-summary">0 recorded</span>
                     </div>
 
-                    <!-- Desktop Table -->
-                    <div class="hidden sm:block overflow-x-auto max-h-72">
-                        <table class="w-full text-left text-xs text-gray-400">
-                            <thead class="text-gray-500 uppercase border-b border-gray-800 bg-gray-950/60 sticky top-0">
-                                <tr>
-                                    <th class="py-2.5 px-3">Ticket</th>
-                                    <th class="py-2.5 px-3">Pair</th>
-                                    <th class="py-2.5 px-3">Units</th>
-                                    <th class="py-2.5 px-3">Entry &rarr; Exit</th>
-                                    <th class="py-2.5 px-3">Realized PnL</th>
-                                    <th class="py-2.5 px-3 text-right">Closed</th>
-                                </tr>
-                            </thead>
-                            <tbody id="closed-trades-tbody" class="divide-y divide-gray-800/60 font-mono">
-                                <tr>
-                                    <td colspan="6" class="py-8 text-center text-gray-500 font-sans">
-                                        No closed trades recorded yet.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- TAB 1: CLOSED TRADES -->
+                    <div id="history-tab-trades">
+                        <!-- Desktop Table -->
+                        <div class="hidden sm:block overflow-x-auto max-h-72">
+                            <table class="w-full text-left text-xs text-gray-400">
+                                <thead class="text-gray-500 uppercase border-b border-gray-800 bg-gray-950/60 sticky top-0">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Ticket</th>
+                                        <th class="py-2.5 px-3">Pair</th>
+                                        <th class="py-2.5 px-3">Units</th>
+                                        <th class="py-2.5 px-3">Entry &rarr; Exit</th>
+                                        <th class="py-2.5 px-3">Realized PnL</th>
+                                        <th class="py-2.5 px-3 text-right">Closed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="closed-trades-tbody" class="divide-y divide-gray-800/60 font-mono">
+                                    <tr>
+                                        <td colspan="6" class="py-8 text-center text-gray-500 font-sans">
+                                            No closed trades recorded yet.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards List -->
+                        <div id="closed-trades-mobile-cards" class="sm:hidden space-y-2.5 max-h-72 overflow-y-auto">
+                            <div class="py-6 text-center text-gray-500 text-xs">No closed trades recorded yet.</div>
+                        </div>
                     </div>
 
-                    <!-- Mobile Cards List -->
-                    <div id="closed-trades-mobile-cards" class="sm:hidden space-y-2.5 max-h-72 overflow-y-auto">
-                        <div class="py-6 text-center text-gray-500 text-xs">No closed trades recorded yet.</div>
+                    <!-- TAB 2: ORDERS & EXECUTIONS LEDGER -->
+                    <div id="history-tab-orders" class="hidden">
+                        <!-- Desktop Table -->
+                        <div class="hidden sm:block overflow-x-auto max-h-72">
+                            <table class="w-full text-left text-xs text-gray-400">
+                                <thead class="text-gray-500 uppercase border-b border-gray-800 bg-gray-950/60 sticky top-0">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Order #</th>
+                                        <th class="py-2.5 px-3">Type</th>
+                                        <th class="py-2.5 px-3">Pair / Trade</th>
+                                        <th class="py-2.5 px-3">Units / Price</th>
+                                        <th class="py-2.5 px-3">State</th>
+                                        <th class="py-2.5 px-3 text-right">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-tbody" class="divide-y divide-gray-800/60 font-mono">
+                                    <tr>
+                                        <td colspan="6" class="py-8 text-center text-gray-500 font-sans">
+                                            No orders recorded yet.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards List -->
+                        <div id="orders-mobile-cards" class="sm:hidden space-y-2.5 max-h-72 overflow-y-auto">
+                            <div class="py-6 text-center text-gray-500 text-xs">No orders recorded yet.</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -892,6 +930,76 @@
                 }).join('');
             }
 
+            // 4B. Orders & Executions Ledger
+            const orders = data.orders || [];
+            const ordersTbody = document.getElementById('orders-tbody');
+            const ordersMobileCards = document.getElementById('orders-mobile-cards');
+            const totalOrdersSummary = document.getElementById('total-orders-summary');
+            if (totalOrdersSummary) totalOrdersSummary.innerText = orders.length;
+
+            if (ordersTbody) {
+                if (orders.length === 0) {
+                    ordersTbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-gray-500 font-sans">No orders recorded yet.</td></tr>`;
+                    if (ordersMobileCards) ordersMobileCards.innerHTML = `<div class="py-6 text-center text-gray-500 text-xs">No orders recorded yet.</div>`;
+                } else {
+                    ordersTbody.innerHTML = orders.map(o => {
+                        const isFilled = o.state === 'FILLED';
+                        const isCancelled = o.state === 'CANCELLED';
+                        const stateBadge = isFilled 
+                            ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FILLED</span>'
+                            : isCancelled 
+                            ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-gray-700/50 text-gray-400 border border-gray-600/30">CANCELLED</span>'
+                            : `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">${o.state}</span>`;
+
+                        const time = o.filled_time ? o.filled_time.substring(0, 16).replace('T', ' ') : (o.create_time ? o.create_time.substring(0, 16).replace('T', ' ') : '--');
+                        const priceDisplay = o.price ? parseFloat(o.price).toFixed(5) : '--';
+                        const unitsDisplay = o.units ? Math.abs(parseInt(o.units)).toLocaleString() + ' u' : '--';
+
+                        let typeColor = 'text-blue-400';
+                        if (o.type === 'STOP_LOSS') typeColor = 'text-rose-400';
+                        else if (o.type === 'TAKE_PROFIT') typeColor = 'text-emerald-400';
+
+                        return `
+                            <tr class="hover:bg-gray-800/40 transition">
+                                <td class="py-2.5 px-3 text-gray-400">#${o.id}</td>
+                                <td class="py-2.5 px-3 font-semibold ${typeColor}">
+                                    ${o.type}
+                                </td>
+                                <td class="py-2.5 px-3 text-white font-medium">
+                                    ${o.instrument || '--'}
+                                    ${o.trade_id ? `<span class="text-[10px] text-gray-500 font-mono ml-1">(Trade #${o.trade_id})</span>` : ''}
+                                </td>
+                                <td class="py-2.5 px-3 text-gray-300 font-mono text-xs">
+                                    ${o.units ? unitsDisplay : ''} ${o.price ? '@ ' + priceDisplay : ''}
+                                </td>
+                                <td class="py-2.5 px-3">${stateBadge}</td>
+                                <td class="py-2.5 px-3 text-right text-gray-500 text-[11px] font-mono">${time} UTC</td>
+                            </tr>`;
+                    }).join('');
+
+                    if (ordersMobileCards) {
+                        ordersMobileCards.innerHTML = orders.map(o => {
+                            const isFilled = o.state === 'FILLED';
+                            const stateClass = isFilled ? 'text-emerald-400 bg-emerald-500/20' : 'text-gray-400 bg-gray-700/50';
+                            const time = o.filled_time ? o.filled_time.substring(0, 16).replace('T', ' ') : '--';
+                            return `
+                                <div class="glass-panel rounded-xl p-3 border border-gray-800 flex items-center justify-between">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-white text-xs mono">#${o.id} ${o.type}</span>
+                                            <span class="text-[10px] px-1.5 py-0.2 rounded font-semibold ${stateClass}">${o.state}</span>
+                                        </div>
+                                        <div class="text-[10px] text-gray-400 font-mono mt-0.5">
+                                            ${o.instrument || ''} ${o.units ? Math.abs(o.units).toLocaleString() + ' u' : ''} ${o.price ? '@ ' + o.price : ''}
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[10px] text-gray-500 font-mono">${time} UTC</div>
+                                </div>`;
+                        }).join('');
+                    }
+                }
+            }
+
             // 5. Terminal Logs Feed
             const term = document.getElementById('terminal-feed');
             if (logs.length > 0) {
@@ -922,6 +1030,26 @@
 
             // 7. Auto-Sync TradingView Chart with Active Position
             syncChartWithTrade(openTrades);
+        }
+
+        // Tab Switcher for History Card (Closed Trades vs Orders)
+        function switchHistoryTab(tab) {
+            const tabTrades = document.getElementById('history-tab-trades');
+            const tabOrders = document.getElementById('history-tab-orders');
+            const btnTrades = document.getElementById('tab-btn-trades');
+            const btnOrders = document.getElementById('tab-btn-orders');
+
+            if (tab === 'trades') {
+                tabTrades.classList.remove('hidden');
+                tabOrders.classList.add('hidden');
+                btnTrades.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-white border-b-2 border-indigo-500 pb-1 flex items-center gap-1.5 transition";
+                btnOrders.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition";
+            } else {
+                tabTrades.classList.add('hidden');
+                tabOrders.classList.remove('hidden');
+                btnOrders.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-white border-b-2 border-blue-500 pb-1 flex items-center gap-1.5 transition";
+                btnTrades.className = "text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white pb-1 flex items-center gap-1.5 transition";
+            }
         }
 
         // TradingView Real-Time Chart Management
