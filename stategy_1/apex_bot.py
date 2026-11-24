@@ -264,8 +264,9 @@ class ApexTradingBot:
                 # Spread filter check
                 pricing = self.client.get_pricing([inst])
                 spread_pips = pricing.get(inst, {}).get("spread_pips", 0.0)
-                if spread_pips > self.max_spread:
-                    self.log("INFO", f"Skipping {inst}: Spread ({spread_pips:.1f} pips) exceeds APEX max ({self.max_spread:.1f} pips).")
+                allowed_spread = (self.max_spread * 6.0) if ("XAU" in inst or "GOLD" in inst) else self.max_spread
+                if spread_pips > allowed_spread:
+                    self.log("INFO", f"Skipping {inst}: Spread ({spread_pips:.1f} pips) exceeds APEX max ({allowed_spread:.1f} pips).")
                     continue
 
                 tf = self.tf_map.get(inst, "H4")

@@ -125,7 +125,12 @@ class OandaClient:
             inst = price["instrument"]
             bid = float(price["closeoutBid"])
             ask = float(price["closeoutAsk"])
-            pip_size = 0.01 if "JPY" in inst else 0.0001
+            if "XAU" in inst or "GOLD" in inst:
+                pip_size = 0.10
+            elif "JPY" in inst:
+                pip_size = 0.01
+            else:
+                pip_size = 0.0001
             spread_pips = round((ask - bid) / pip_size, 2)
             result[inst] = {
                 "bid": bid,
