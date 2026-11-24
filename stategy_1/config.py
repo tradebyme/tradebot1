@@ -39,19 +39,19 @@ class Config:
         BASE_URL = "https://api-fxpractice.oanda.com/v3"
         STREAM_URL = "https://stream-fxpractice.oanda.com/v3"
 
-    # Prop Challenge & Capital Rules ($2,000 Prop Firm Challenge Baseline)
+    # Prop Challenge & Capital Rules ($5,000 Prop Firm Challenge Baseline)
     CHALLENGE_START_DATE = os.getenv("CHALLENGE_START_DATE", "2026-11-24T15:00:00Z").strip()
-    VIRTUAL_CAPITAL = float(os.getenv("VIRTUAL_CAPITAL", "2000.0"))
-    TARGET_PROFIT_PCT = float(os.getenv("TARGET_PROFIT_PCT", "8.0"))       # 8% target ($160 on $2,000)
-    MAX_DRAWDOWN_PCT = float(os.getenv("MAX_DRAWDOWN_PCT", "8.0"))         # 8% max total loss ($160 on $2,000)
-    MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))     # 5% max daily loss ($100 on $2,000)
+    VIRTUAL_CAPITAL = float(os.getenv("VIRTUAL_CAPITAL", "5000.0"))
+    TARGET_PROFIT_PCT = float(os.getenv("TARGET_PROFIT_PCT", "8.0"))       # 8% target ($400 on $5,000)
+    MAX_DRAWDOWN_PCT = float(os.getenv("MAX_DRAWDOWN_PCT", "8.0"))         # 8% max total loss ($400 on $5,000)
+    MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))     # 5% max daily loss ($250 on $5,000)
     
     # Proactive Circuit Breakers
-    DAILY_CIRCUIT_BREAKER_PCT = float(os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.0")) # $60 on $2,000 (3% daily circuit breaker)
+    DAILY_CIRCUIT_BREAKER_PCT = float(os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.0")) # $150 on $5,000 (3% daily circuit breaker)
     MAX_DAILY_LOSSES = int(os.getenv("MAX_DAILY_LOSSES", "2")) # Halts trading if 2 losses occur in 1 day
 
     # Risk Management Per Trade (Optimized for Prop Firm Survival)
-    RISK_PER_TRADE_PCT = float(os.getenv("RISK_PER_TRADE_PCT", "0.75")) # 0.75% risk per trade ($15 on $2,000)
+    RISK_PER_TRADE_PCT = float(os.getenv("RISK_PER_TRADE_PCT", "0.75")) # 0.75% risk per trade ($37.50 on $5,000)
     RISK_REWARD_RATIO = float(os.getenv("RISK_REWARD_RATIO", "1.2"))   # 1:1.2 Risk to Reward (Proven 54% win rate)
 
     # Strategy Configuration

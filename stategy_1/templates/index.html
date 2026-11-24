@@ -128,7 +128,7 @@
                         </span>
                     </div>
                     <p id="challenge-header-subtitle" class="text-xs text-gray-400 mt-0.5 truncate">
-                        $2,000 Challenge (Attempt #2) &bull; London/NY H1/M15 Momentum Pullback &bull; 1:1.2 R:R
+                        $5,000 Challenge (Attempt #2) &bull; London/NY H1/M15 Momentum Pullback &bull; 1:1.2 R:R
                     </p>
                 </div>
             </div>
@@ -183,7 +183,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Target Goal (+8.0%)</span>
-                            <span id="target-pill-badge" class="px-2 py-0.2 text-[10px] rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Target: +$160.00</span>
+                            <span id="target-pill-badge" class="px-2 py-0.2 text-[10px] rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Target: +$400.00</span>
                         </div>
                         <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="target-profit-val">+$0.00 (+0.0%)</div>
                     </div>
@@ -209,7 +209,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">Max Drawdown Shield (-8.0%)</span>
-                            <span id="drawdown-pill-badge" class="px-2 py-0.2 text-[10px] rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">Limit: -$160.00</span>
+                            <span id="drawdown-pill-badge" class="px-2 py-0.2 text-[10px] rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">Limit: -$400.00</span>
                         </div>
                         <div class="text-2xl sm:text-3xl font-extrabold mt-1.5 text-white mono" id="total-loss-val">-$0.00 (-0.0%)</div>
                     </div>
@@ -260,7 +260,7 @@
                     <span>Win Rate: <span id="win-rate-text" class="text-emerald-400 font-semibold font-mono">0.0%</span></span>
                     <span id="total-net-pl" class="font-mono text-gray-300 font-semibold">$0.00 net</span>
                 </div>
-                <div class="text-[10px] text-gray-500 mt-1" id="base-floor-info">Base: $2,000 &bull; Floor: $1,840</div>
+                <div class="text-[10px] text-gray-500 mt-1" id="base-floor-info">Base: $5,000 &bull; Floor: $4,600</div>
             </div>
 
             <!-- TILE 3: OANDA BROKER NAV -->
@@ -398,9 +398,9 @@
                 <div>
                     <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2" id="equity-chart-title">
                         <i class="fa-solid fa-chart-area text-blue-400"></i>
-                        Challenge Equity Trajectory ($2,000 Baseline)
+                        Challenge Equity Trajectory ($5,000 Baseline)
                     </h2>
-                    <p class="text-[11px] text-gray-400" id="equity-chart-sub">Target Line: $2,160 (+8%) &bull; Max Drawdown Floor: $1,840 (-8%)</p>
+                    <p class="text-[11px] text-gray-400" id="equity-chart-sub">Target Line: $5,400 (+8%) &bull; Max Drawdown Floor: $4,600 (-8%)</p>
                 </div>
                 <button onclick="resetChallenge()" class="text-xs text-gray-500 hover:text-rose-400 transition underline">
                     Reset Baseline
@@ -1340,7 +1340,7 @@
 
         // Action: Reset Challenge
         async function resetChallenge() {
-            if (!confirm("⚠️ START NEW PROP CHALLENGE ATTEMPT?\n\nThe current attempt will be permanently archived into Challenge Attempts History, and a fresh $2,000 baseline will begin immediately.")) return;
+            if (!confirm("⚠️ START NEW PROP CHALLENGE ATTEMPT?\n\nThe current attempt will be permanently archived into Challenge Attempts History, and a fresh $5,000 baseline will begin immediately.")) return;
             try {
                 await fetch(API_BASE + '/api/bot/reset_challenge', { method: 'POST' });
                 fetchDashboard();

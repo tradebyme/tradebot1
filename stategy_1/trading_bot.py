@@ -79,7 +79,7 @@ class TradingBot:
             else:
                 challenge_start = env_start or state_start or "2026-11-24T15:00:00Z"
             today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            target_capital = float(getattr(Config, "VIRTUAL_CAPITAL", 2000.0))
+            target_capital = float(getattr(Config, "VIRTUAL_CAPITAL", 5000.0))
 
             sorted_closed = sorted(closed, key=lambda x: x.get("closeTime", ""))
 
@@ -91,13 +91,15 @@ class TradingBot:
                 past_losses = len(past_trades) - past_wins
                 first_date = past_trades[0].get("closeTime", "")[:10]
                 last_date = past_trades[-1].get("closeTime", "")[:10]
-                status_str = "FAILED" if past_pl <= -(target_capital * 0.08) else ("PASSED" if past_pl >= (target_capital * 0.08) else "COMPLETED")
-                reason_str = "Max total drawdown limit (-8% / -$160) breached." if status_str == "FAILED" else ("Profit target (+8% / +$160) achieved." if status_str == "PASSED" else "Closed manually.")
+                # Attempt #1 was run on a $2,000 account and blew past the -$160 limit (-$170.98)
+                is_failed = (past_pl <= -160.0) or (past_pl <= -(target_capital * 0.08))
+                status_str = "FAILED" if is_failed else ("PASSED" if past_pl >= (target_capital * 0.08) else "COMPLETED")
+                reason_str = "Max total drawdown limit breached (-8% limit hit)." if status_str == "FAILED" else ("Profit target achieved." if status_str == "PASSED" else "Closed manually.")
                 self.risk_manager.state["archived_attempts"] = [{
                     "attempt_number": 1,
                     "start_date": first_date,
                     "end_date": last_date,
-                    "virtual_capital": target_capital,
+                    "virtual_capital": 2000.0,
                     "total_trades": len(past_trades),
                     "total_wins": past_wins,
                     "total_losses": past_losses,
