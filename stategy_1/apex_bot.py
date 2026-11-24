@@ -43,8 +43,22 @@ class ApexTradingBot:
     """
 
     def __init__(self):
-        apex_api_key = os.getenv("OANDA_API_KEY_APEX") or os.getenv("OANDA_API_KEY_5") or Config.API_KEY
-        apex_account_id = os.getenv("OANDA_ACCOUNT_ID_APEX") or os.getenv("OANDA_ACCOUNT_ID_5") or Config.ACCOUNT_ID
+        apex_api_key = (
+            os.getenv("OANDA_API_KEY_APEX")
+            or os.getenv("OANDA_API_KEY_5")
+            or Config.API_KEY
+            or ""
+        ).strip()
+
+        # Determine APEX Account ID:
+        # If explicit OANDA_ACCOUNT_ID_APEX is provided, use it.
+        # If dedicated APEX key is provided without account ID, pass None to auto-discover.
+        # Only fall back to Config.ACCOUNT_ID if using the shared Config.API_KEY.
+        apex_account_id = (
+            os.getenv("OANDA_ACCOUNT_ID_APEX")
+            or os.getenv("OANDA_ACCOUNT_ID_5")
+            or (Config.ACCOUNT_ID if apex_api_key == Config.API_KEY else "")
+        ).strip() or None
 
         self.client = OandaClient(api_key=apex_api_key, account_id=apex_account_id)
         self.risk_manager = ApexRiskManager()
@@ -59,15 +73,18 @@ class ApexTradingBot:
         # Dynamic Peak Trailing State: {trade_id: {"instrument": str, "direction": str, "entry": float, "peak": float, "atr": float, "current_sl": float}}
         self.trailing_states: Dict[str, Dict[str, Any]] = {}
 
-        self.instruments = [i.strip() for i in os.getenv("APEX_INSTRUMENTS", "XAU_USD,EUR_USD,GBP_USD").split(",")]
+        self.instruments = [
+            i.strip() for i in (os.getenv("APEX_INSTRUMENTS") or os.getenv("INSTRUMENTS", "XAU_USD,EUR_USD,GBP_USD")).split(",") if i.strip()
+        ]
         self.tf_map = {
             "XAU_USD": os.getenv("TF_XAUUSD", "H4"),
             "EUR_USD": os.getenv("TF_EURUSD", "H4"),
             "GBP_USD": os.getenv("TF_GBPUSD", "H1"),
         }
+        self.max_spread = float(os.getenv("APEX_MAX_SPREAD_PIPS") or os.getenv("MAX_SPREAD_PIPS", "4.0"))
 
         self._seed_closed_trades()
-        self.log("INFO", "APEX SNIPER Institutional Engine initialized successfully.")
+        self.log("INFO", f"APEX SNIPER Institutional Engine initialized successfully on account: {self.client.account_id}.")
 
     def log(self, level: str, message: str):
         """Append log entry for Web UI feed and console logger."""
@@ -244,6 +261,13 @@ class ApexTradingBot:
                 if inst in open_instruments:
                     continue
 
+                # Spread filter check
+                pricing = self.client.get_pricing([inst])
+                spread_pips = pricing.get(inst, {}).get("spread_pips", 0.0)
+                if spread_pips > self.max_spread:
+                    self.log("INFO", f"Skipping {inst}: Spread ({spread_pips:.1f} pips) exceeds APEX max ({self.max_spread:.1f} pips).")
+                    continue
+
                 tf = self.tf_map.get(inst, "H4")
                 candles = self.client.get_candles(inst, granularity=tf, count=250)
                 if not candles:
@@ -257,9 +281,8 @@ class ApexTradingBot:
                     entry = eval_res["price"]
                     sl = eval_res["sl"]
                     atr = eval_res["atr"]
-                    pip_size, pip_val, _ = self.client.get_pip_specs(inst)
 
-                    units = self.risk_manager.calculate_position_size(entry, sl, pip_val)
+                    units = self.risk_manager.calculate_position_size(inst, entry, sl)
                     if sig == "SELL":
                         units = -units
 

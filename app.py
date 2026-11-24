@@ -19,16 +19,18 @@ import signal
 import logging
 import subprocess
 from pathlib import Path
+from dotenv import load_dotenv
 from flask import Flask, request, Response, redirect, jsonify
 import requests
+
+ROOT_DIR = Path(__file__).resolve().parent
+load_dotenv(ROOT_DIR / ".env")
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] [Gateway]: %(message)s"
 )
 logger = logging.getLogger("Gateway")
-
-ROOT_DIR = Path(__file__).resolve().parent
 PORT_GATEWAY = int(os.environ.get("PORT", 5000))
 PORT_STRAT1 = int(os.environ.get("PORT_STRAT1", 5001))
 PORT_STRAT5 = int(os.environ.get("PORT_STRAT5", 5005))
@@ -47,22 +49,22 @@ def spawn_subprocesses():
     # 1. Environment for Bot 1 (Strategy 1)
     env1 = os.environ.copy()
     env1["PORT"] = str(PORT_STRAT1)
-    if "OANDA_API_KEY_1" in env1:
+    if env1.get("OANDA_API_KEY_1"):
         env1["OANDA_API_KEY"] = env1["OANDA_API_KEY_1"]
-    if "OANDA_ACCOUNT_ID_1" in env1:
+    if env1.get("OANDA_ACCOUNT_ID_1"):
         env1["OANDA_ACCOUNT_ID"] = env1["OANDA_ACCOUNT_ID_1"]
 
     # 2. Environment for Bot 2 (APEX SNIPER / Strategy 5)
     env5 = os.environ.copy()
     env5["PORT"] = str(PORT_STRAT5)
-    if "OANDA_API_KEY_APEX" in env5:
+    if env5.get("OANDA_API_KEY_APEX"):
         env5["OANDA_API_KEY"] = env5["OANDA_API_KEY_APEX"]
-    elif "OANDA_API_KEY_5" in env5:
+    elif env5.get("OANDA_API_KEY_5"):
         env5["OANDA_API_KEY"] = env5["OANDA_API_KEY_5"]
 
-    if "OANDA_ACCOUNT_ID_APEX" in env5:
+    if env5.get("OANDA_ACCOUNT_ID_APEX"):
         env5["OANDA_ACCOUNT_ID"] = env5["OANDA_ACCOUNT_ID_APEX"]
-    elif "OANDA_ACCOUNT_ID_5" in env5:
+    elif env5.get("OANDA_ACCOUNT_ID_5"):
         env5["OANDA_ACCOUNT_ID"] = env5["OANDA_ACCOUNT_ID_5"]
 
     py_exe = sys.executable

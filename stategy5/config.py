@@ -3,16 +3,15 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Search for .env in current directory, parent directory, or system environment
+# Load parent .env first (for shared root configs), then local .env if present
 current_dir = Path(__file__).resolve().parent
 parent_dir = current_dir.parent
 
-if (current_dir / ".env").exists():
-    load_dotenv(current_dir / ".env")
-elif (parent_dir / ".env").exists():
+if (parent_dir / ".env").exists():
     load_dotenv(parent_dir / ".env")
-else:
-    load_dotenv()
+if (current_dir / ".env").exists():
+    load_dotenv(current_dir / ".env", override=True)
+load_dotenv()
 
 
 class Config:
@@ -21,20 +20,22 @@ class Config:
     Designed for Prop Firm Challenge Compliance & Cloud Deployment on Render.
     """
 
-    # 1. OANDA API Credentials
-    # Check bot-specific key first (OANDA_API_KEY_5 / OANDA_API_KEY_APEX), then global key
+    # 1. OANDA API Credentials (No hardcoded credentials)
+    # Check bot-specific key first (OANDA_API_KEY_APEX / OANDA_API_KEY_5), then global key
     API_KEY = (
-        os.getenv("OANDA_API_KEY_5")
-        or os.getenv("OANDA_API_KEY_APEX")
+        os.getenv("OANDA_API_KEY_APEX")
+        or os.getenv("OANDA_API_KEY_5")
         or os.getenv("OANDA_API_KEY")
+        or os.getenv("OANDA_API")
         or os.getenv("oanda_api")
-        or os.getenv("OANDA_API", "7440c485ceedec42c38b0b49f61b7992-88ff981ae8caf36fd9e26fdfde387992")
+        or ""
     ).strip()
     ACCOUNT_ID = (
-        os.getenv("OANDA_ACCOUNT_ID_5")
-        or os.getenv("OANDA_ACCOUNT_ID_APEX")
+        os.getenv("OANDA_ACCOUNT_ID_APEX")
+        or os.getenv("OANDA_ACCOUNT_ID_5")
         or os.getenv("OANDA_ACCOUNT_ID")
-        or os.getenv("oanda_account_id", "101-001-41055093-001")
+        or os.getenv("oanda_account_id")
+        or ""
     ).strip()
     ENVIRONMENT = os.getenv("OANDA_ENV", "practice").lower().strip()  # 'practice' or 'live'
 
@@ -48,15 +49,15 @@ class Config:
 
     # 2. Prop Challenge & Capital Rules ($2,000 / $5,000 / $10,000)
     CHALLENGE_START_DATE = os.getenv("CHALLENGE_START_DATE", "2026-11-15").strip()
-    VIRTUAL_CAPITAL = float(os.getenv("VIRTUAL_CAPITAL", "2000.0"))
-    TARGET_PROFIT_PCT = float(os.getenv("TARGET_PROFIT_PCT", "8.0"))       # Phase 1 Target: 8%
-    TARGET_PROFIT_P2_PCT = float(os.getenv("TARGET_PROFIT_P2_PCT", "5.0")) # Phase 2 Target: 5%
-    MAX_DRAWDOWN_PCT = float(os.getenv("MAX_DRAWDOWN_PCT", "8.0"))         # Max Overall Drawdown Floor: 8% - 10%
-    MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))     # Prop Firm Daily Loss Limit: 5.0%
+    VIRTUAL_CAPITAL = float(os.getenv("APEX_VIRTUAL_CAPITAL") or os.getenv("VIRTUAL_CAPITAL", "2000.0"))
+    TARGET_PROFIT_PCT = float(os.getenv("APEX_TARGET_PROFIT_PCT") or os.getenv("TARGET_PROFIT_PCT", "8.0"))       # Phase 1 Target: 8%
+    TARGET_PROFIT_P2_PCT = float(os.getenv("APEX_TARGET_PROFIT_P2_PCT") or os.getenv("TARGET_PROFIT_P2_PCT", "5.0")) # Phase 2 Target: 5%
+    MAX_DRAWDOWN_PCT = float(os.getenv("APEX_MAX_DRAWDOWN_PCT") or os.getenv("MAX_DRAWDOWN_PCT", "8.0"))         # Max Overall Drawdown Floor: 8% - 10%
+    MAX_DAILY_LOSS_PCT = float(os.getenv("APEX_MAX_DAILY_LOSS_PCT") or os.getenv("MAX_DAILY_LOSS_PCT", "5.0"))     # Prop Firm Daily Loss Limit: 5.0%
 
     # Proactive Institutional Circuit Breakers
-    DAILY_CIRCUIT_BREAKER_PCT = float(os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.0"))  # Halts if daily loss >= 3.0%
-    MAX_DAILY_LOSSES = int(os.getenv("MAX_DAILY_LOSSES", "2"))  # Halts trading after 2 losses in a day
+    DAILY_CIRCUIT_BREAKER_PCT = float(os.getenv("APEX_DAILY_CIRCUIT_BREAKER_PCT") or os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.0"))  # Halts if daily loss >= 3.0%
+    MAX_DAILY_LOSSES = int(os.getenv("APEX_MAX_DAILY_LOSSES") or os.getenv("MAX_DAILY_LOSSES", "2"))  # Halts trading after 2 losses in a day
 
     # 3. Strategy Core Configuration (Macro Trend + Momentum Crossover + ATR)
     FAST_EMA = int(os.getenv("FAST_EMA", "20"))
@@ -74,7 +75,7 @@ class Config:
 
     # 4. Portfolio Instruments & Multi-Timeframe Mapping
     # Portfolio basket: XAU_USD (Gold H4), EUR_USD (H4), GBP_USD (H1)
-    INSTRUMENTS = [i.strip() for i in os.getenv("INSTRUMENTS", "XAU_USD,EUR_USD,GBP_USD").split(",") if i.strip()]
+    INSTRUMENTS = [i.strip() for i in (os.getenv("APEX_INSTRUMENTS") or os.getenv("INSTRUMENTS", "XAU_USD,EUR_USD,GBP_USD")).split(",") if i.strip()]
     TIMEFRAME_MAPPING = {
         "XAU_USD": os.getenv("TF_XAUUSD", "H4"),
         "EUR_USD": os.getenv("TF_EURUSD", "H4"),
@@ -85,10 +86,10 @@ class Config:
 
     # 5. Position Sizing & Risk per Trade
     # 0.75% for Evaluation Sprint; 0.50% for Funded Account Preservation
-    RISK_PER_TRADE_PCT = float(os.getenv("RISK_PER_TRADE_PCT", "0.75"))
-    MAX_CONCURRENT_TRADES = int(os.getenv("MAX_CONCURRENT_TRADES", "2"))
-    MAX_TRADES_PER_DAY = int(os.getenv("MAX_TRADES_PER_DAY", "3"))
-    MAX_SPREAD_PIPS = float(os.getenv("MAX_SPREAD_PIPS", "4.0"))  # 4 pips Gold / 2 pips FX
+    RISK_PER_TRADE_PCT = float(os.getenv("APEX_RISK_PER_TRADE_PCT") or os.getenv("RISK_PER_TRADE_PCT", "0.75"))
+    MAX_CONCURRENT_TRADES = int(os.getenv("APEX_MAX_CONCURRENT_TRADES") or os.getenv("MAX_CONCURRENT_TRADES", "2"))
+    MAX_TRADES_PER_DAY = int(os.getenv("APEX_MAX_TRADES_PER_DAY") or os.getenv("MAX_TRADES_PER_DAY", "3"))
+    MAX_SPREAD_PIPS = float(os.getenv("APEX_MAX_SPREAD_PIPS") or os.getenv("MAX_SPREAD_PIPS", "4.0"))  # 4 pips Gold / 2 pips FX
 
     # 6. Session Filter (Optional - Default False for H4 macro swing)
     SESSION_FILTER_ENABLED = os.getenv("SESSION_FILTER_ENABLED", "false").lower() in ("true", "1", "yes")

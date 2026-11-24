@@ -21,13 +21,13 @@ class ApexRiskManager:
         else:
             self.state_file = Path(state_file_path)
 
-        self.virtual_capital = float(os.getenv("VIRTUAL_CAPITAL", "5000.0"))
-        self.target_profit_usd = self.virtual_capital * (float(os.getenv("TARGET_PROFIT_PCT", "8.0")) / 100.0)
-        self.target_profit_p2_usd = self.virtual_capital * (float(os.getenv("TARGET_PROFIT_P2_PCT", "5.0")) / 100.0)
-        self.max_drawdown_usd = self.virtual_capital * (float(os.getenv("MAX_DRAWDOWN_PCT", "8.0")) / 100.0)
-        self.daily_loss_limit_usd = self.virtual_capital * (float(os.getenv("MAX_DAILY_LOSS_PCT", "5.0")) / 100.0)
-        self.circuit_breaker_usd = self.virtual_capital * (float(os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.0")) / 100.0)
-        self.risk_per_trade_usd = self.virtual_capital * (float(os.getenv("APEX_RISK_PER_TRADE_PCT", "0.75")) / 100.0)
+        self.virtual_capital = float(os.getenv("APEX_VIRTUAL_CAPITAL") or os.getenv("VIRTUAL_CAPITAL", "2000.0"))
+        self.target_profit_usd = self.virtual_capital * (float(os.getenv("APEX_TARGET_PROFIT_PCT") or os.getenv("TARGET_PROFIT_PCT", "8.0")) / 100.0)
+        self.target_profit_p2_usd = self.virtual_capital * (float(os.getenv("APEX_TARGET_PROFIT_P2_PCT") or os.getenv("TARGET_PROFIT_P2_PCT", "5.0")) / 100.0)
+        self.max_drawdown_usd = self.virtual_capital * (float(os.getenv("APEX_MAX_DRAWDOWN_PCT") or os.getenv("MAX_DRAWDOWN_PCT", "8.0")) / 100.0)
+        self.daily_loss_limit_usd = self.virtual_capital * (float(os.getenv("APEX_MAX_DAILY_LOSS_PCT") or os.getenv("MAX_DAILY_LOSS_PCT", "5.0")) / 100.0)
+        self.circuit_breaker_usd = self.virtual_capital * (float(os.getenv("APEX_DAILY_CIRCUIT_BREAKER_PCT") or os.getenv("DAILY_CIRCUIT_BREAKER_PCT", "3.0")) / 100.0)
+        self.risk_per_trade_usd = self.virtual_capital * (float(os.getenv("APEX_RISK_PER_TRADE_PCT") or os.getenv("RISK_PER_TRADE_PCT", "0.75")) / 100.0)
 
         self.state = self._load_state()
 
@@ -112,21 +112,41 @@ class ApexRiskManager:
             return False, f"Daily trade limit reached ({daily_count}/{max_daily_trades})."
 
         daily_losses = self.state.get("daily_losses_count", 0)
-        if daily_losses >= int(os.getenv("MAX_DAILY_LOSSES", "2")):
-            return False, f"Max daily consecutive losses reached ({daily_losses})."
+        max_daily_losses = int(os.getenv("APEX_MAX_DAILY_LOSSES") or os.getenv("MAX_DAILY_LOSSES", "2"))
+        if daily_losses >= max_daily_losses:
+            return False, f"Max daily consecutive losses reached ({daily_losses}/{max_daily_losses})."
 
         return True, "Risk check passed."
 
-    def calculate_position_size(self, entry_price: float, stop_loss: float, pip_value_usd_per_unit: float) -> int:
-        """Calculate dynamic unit position size risking strictly RISK_PER_TRADE_USD."""
-        dist = abs(entry_price - stop_loss)
-        if dist <= 0 or pip_value_usd_per_unit <= 0:
+    def calculate_position_size(self, instrument: str, entry_price: float, stop_loss_price: float) -> int:
+        """
+        Calculate dynamic unit position size risking strictly RISK_PER_TRADE_USD.
+        Budget: e.g. $15.00 on $2,000 (0.75%).
+        """
+        price_dist = abs(entry_price - stop_loss_price)
+        if price_dist <= 0:
             return 1000
 
-        risk_usd = self.risk_per_trade_usd
-        loss_per_unit = dist * pip_value_usd_per_unit
-        units = int(risk_usd / loss_per_unit)
-        return max(1, units)
+        inst = instrument.upper()
+        # For Gold (XAU_USD): 1 unit = 1 troy oz. Price move of $1.00 on 1 unit = $1.00 USD.
+        if "XAU" in inst or "GOLD" in inst:
+            units = int(self.risk_per_trade_usd / price_dist)
+            return max(1, min(units, 500))
+
+        # For XXX_USD pairs (e.g. EUR_USD, GBP_USD):
+        # Loss in USD = Units * price_dist
+        # Units = risk_usd / price_dist
+        elif inst.endswith("_USD"):
+            units = int(round(self.risk_per_trade_usd / price_dist))
+            return max(100, min(units, 50000))
+
+        elif inst.startswith("USD_"):
+            units = int(round((self.risk_per_trade_usd * entry_price) / price_dist))
+            return max(100, min(units, 50000))
+
+        else:
+            units = int(round(self.risk_per_trade_usd / price_dist))
+            return max(100, min(units, 50000))
 
     def record_closed_trade(self, trade_id: str, instrument: str, realized_pl: float):
         """Update metrics and circuit breakers when a trade closes."""
